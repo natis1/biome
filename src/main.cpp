@@ -17,6 +17,9 @@
  */
 
 #include "display.h"
+#include <zconf.h>
+#include <signal.h>
+#include <execinfo.h>
 
 bool osIsSmart()
 {
@@ -29,12 +32,26 @@ bool osIsSmart()
     #endif
 }
 
+void handler(int sig) {
+    void *array[20];
+    size_t size;
+
+    // get void*'s for all entries on the stack
+    size = backtrace(array, 20);
+
+    // print out all the frames to stderr
+    std::cerr << "Segfault. Size is: " << size << std::endl;
+    fprintf(stderr, "Error: signal %d:\n", sig);
+    backtrace_symbols_fd(array, size, STDERR_FILENO);
+    exit(1);
+}
+
 int main(int argc, char **argv) {
     if (!osIsSmart()) {
         std::cout << "Unfortunately, your OS is not supported at this time" << std::endl;
         return 1;
     }
-
+    signal(SIGSEGV, handler);
     display();
     return 0;
 }
