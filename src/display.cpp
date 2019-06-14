@@ -23,6 +23,7 @@
 #include <sstream>
 #include <sys/types.h>
 #include <dirent.h>
+#include <string.h>
 
 
 display::display()
@@ -33,6 +34,7 @@ display::display()
     mkdir(biomefolder.c_str(), 0755);
     this->savePath = biomefolder;
     initscr();
+    noecho();
     start_color();
     std::cerr << "has colors? " << has_colors() << " can change colors?" << can_change_color() << " num colors? " << COLORS << std::endl;
     init_pair(1, COLOR_WHITE, COLOR_BLACK);
@@ -48,72 +50,130 @@ display::display()
     init_color(68, 200, 1000, 1000); // Cyan
     init_pair(8, 68, COLOR_BLACK);
 
-
-
-    getBiomeType();
-    getForestName();
-
-
-    if (std::ifstream(biomefolder + "forest")) {
-        sfile = fromJson<forest::saveFile>(pseudojson::fileToPseudoJson(biomefolder + "forest"));
-        std::cout << "loaded existing file" << std::endl;
-    } else {
-
-
-        forest::newForest(&sfile, 3);
-        pseudojson::writeToFile(toJson(sfile), biomefolder + "forest");
-        std::cout << "created new file" << std::endl;
-    }
-
-    std::cout << sfile.biomeType << " is biome type " << sfile.name << " is name" << std::endl;
-
-
     signal(SIGABRT, display::sigabrtHandler);
     signal(SIGKILL, display::sigabrtHandler);
     signal(SIGSEGV, display::sigabrtHandler);
     signal(SIGTSTP, display::sigabrtHandler);
 
+    // True means the game was loaded and you are free to go on
+    if (mainMenu()) {
 
-    // 1 Normal
-    // 2 Good (Based on protium crystal color. See Half-Rose's drawings)
-    // 3 Alright/neutral
-    // 4 Warning
-    // 5 Danger
-    // 6 DANGER!
+    }
 
+/*
+    if (std::ifstream(biomefolder + "forest")) {
+        sfile = fromJson<forest::saveFile>(pseudojson::fileToPseudoJson(biomefolder + "forest"));
+        std::cout << "loaded existing file" << std::endl;
+    } else {
 
-    // 7 Radiant
-    // 8 User Input
-    init_pair(7, COLOR_BLACK, COLOR_YELLOW);
-    init_pair(8, COLOR_GREEN, COLOR_BLACK);
+        getBiomeType();
+        getForestName();
+        forest::newForest(&sfile, 3);
+        pseudojson::writeToFile(toJson(sfile), biomefolder + "forest");
+        std::cout << "created new file" << std::endl;
+    }
 
-    move(0, 0);
-
-    nodelay(stdscr, true);
+    nodelay(stdscr, true); */
 }
 
-int getDir (std::string dir, std::vector<std::string> &files)
+int display::getDir(std::string dir, std::vector<std::string> &files)
 {
     DIR *dp;
     struct dirent *dirp;
     if((dp  = opendir(dir.c_str())) == NULL) {
-        std::cout << "Error(" << errno << ") opening " << dir << endl;
+        std::cout << "Error(" << errno << ") opening " << dir << std::endl;
         return errno;
     }
 
     while ((dirp = readdir(dp)) != NULL) {
+        if (strncmp(dirp->d_name, ".", 1) == 0)
+            continue;
         files.push_back(std::string(dirp->d_name));
     }
     closedir(dp);
     return 0;
 }
 
-void display::mainMenu()
+// most recent file
+std::string display::mostRecentFile(std::vector<std::string> *files)
+{
+    long bestTime = 0;
+    std::string name;
+
+    for (int i = 0; i < files->size(); i++) {
+        std::string fPath = savePath + files->at(i);
+        char *filePath = &fPath[0u];
+        struct stat attrib;
+        stat(filePath, &attrib);
+        long time = static_cast<long int>((attrib.st_ctime));
+        if (time > bestTime) {
+            name = files->at(i);
+            bestTime = time;
+        }
+    }
+    return name;
+}
+
+bool display::mainMenu()
 {
     std::vector<std::string> files = std::vector<std::string>();
     getDir(this->savePath, files);
+    bool newGame = (files.size() < 9);
+    bool continueGame = (files.size() > 0);
+    std::string recentFile;
+    if (continueGame) {
+        recentFile = mostRecentFile(&files);
+        std::cerr << "most recent file is: " << recentFile << std::endl;
+    }
 
+    move(4, 0);
+    if (newGame) {
+        printw("(N)ew biome\n");
+    }
+    if (continueGame) {
+        printw("(C)ontinue biome: ");
+        printw(recentFile.c_str());
+        printw("\n");
+    }
+    printw("Or load a biome below with a number key:\n\n");
+    // Bleh, I have to do the awful 1 indexed for loop
+    for (int i = 1; i <= files.size(); i++) {
+        printw("(%d) %s", i, files.at( (i - 1) ).c_str());
+    }
+    while (true) {
+        move(LINES - 1, COLS - 1);
+        int c = getch();
 
+        if (c == ERR) {
+            break;
+        } else if (newGame && (c == 'n' || c == 'N')) {
+            // newgame...
+            move(0, 0);
+            clrtobot();
+            int biomeType = getBiomeType();
+            move(0, 0);
+            clrtobot();
+            std::string biomeName = getForestName();
+            forest::newForest(&sfile, 3);
+            pseudojson::writeToFile(toJson(sfile), this->savePath + biomeName);
+            std::cout << "created new file" << std::endl;
+
+            return true;
+        } else if (continueGame && (c == 'c' || c == 'C')) {
+            // Continue listed game
+            sfile = fromJson<forest::saveFile>(pseudojson::fileToPseudoJson(this->savePath + recentFile));
+
+            return true;
+        } else if (c >= '1' && c <= '9') {
+            int realInt = c - '0';
+            if (realInt <= files.size()) {
+                realInt--;
+                sfile = fromJson<forest::saveFile>(pseudojson::fileToPseudoJson(this->savePath + files[realInt]));
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 
@@ -130,7 +190,7 @@ void display::biomeTypeHelper(int biome)
         while(std::getline(t, line)) {
             move(6* (i / 2) + j, x);
             j++;
-            printw("%s", line.c_str());
+            printw(line.c_str());
         }
     }
 
@@ -143,7 +203,7 @@ void display::biomeTypeHelper(int biome)
     while(std::getline(t, line)) {
         move(6* (biome / 2) + i, x);
         i++;
-        printw("%s", line.c_str());
+        printw(line.c_str());
     }
 }
 
@@ -221,19 +281,23 @@ std::string display::getForestName()
                 forestNameHelper(currentState);
             } else if ( (c == KEY_ENTER || c == 10) && currentName.size() > 0) {
                 return currentName;
-            } else if (c == 8 || c == KEY_BACKSPACE) {
+            } else if (c == 8 || c == KEY_BACKSPACE || c == 127) {
                 if (!currentName.empty()) {
                     currentName = currentName.substr(0, currentName.size() - 1);
                 }
             } else if (c == KEY_STAB || c == 9) {
                 currentState = !currentState;
+            } else if (c == '/' || c == '\\' || c == '.') {
+                // Ignore input to sanitize for the system.
             } else {
                 currentName = currentName + static_cast<char>(c);
             }
 
             forestNameHelper(currentState);
             move(1, 21);
-            printw("%s", currentName.c_str());
+            clrtoeol();
+            move(1, 21);
+            printw(currentName.c_str());
         } else {
             if (c == KEY_ENTER || c == 10 || c == 'n') {
                 int wordNum = numWordsRand(rng);
@@ -290,7 +354,7 @@ std::string display::getForestName()
             }
             forestNameHelper(currentState);
             move(1, 21);
-            printw("%s", currentName.c_str());
+            printw(currentName.c_str());
         }
     }
 

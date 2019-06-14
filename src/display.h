@@ -32,8 +32,9 @@ const size_t RANDOM_NAMES_SIZE = std::extent<decltype(RANDOM_NAMES)>::value;
 const std::string BIOME_DESCRIPTIONS[] = {
     "Swamp\n + Nutrient rich\n + Moss\n + Woodlice", "Mountain\n + Easily defensible\n + Cycads\n + Wasps",
     "Desert\n + Hidden oasis\n + Cacti\n + Beetles", "Chaparral\n + Perfect weather\n + Sequoia\n + Ants",
-    "Jungle\n + Full of life\n + Eudicots\n + Bees", "Taiga\n + Winter wonderland\n + Conifers\n + Moths"
+    "Jungle\n + Full of life\n + Orchids\n + Bees", "Taiga\n + Winter wonderland\n + Conifers\n + Moths"
 };
+
 const size_t NUM_BIOMES = std::extent<decltype(BIOME_DESCRIPTIONS)>::value;
 
 
@@ -48,7 +49,8 @@ private:
     void biomeTypeHelper(int biome);
     int getBiomeType();
     int getDir(std::string dir, std::vector<std::string> &files);
-    void mainMenu();
+    bool mainMenu();
+    std::string mostRecentFile(std::vector<std::string> *files);
 
     std::string savePath;
     forest::saveFile sfile;
