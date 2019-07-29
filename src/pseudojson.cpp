@@ -35,6 +35,14 @@ std::string pseudojson::getValue(const pseudojson::ValueData* v)
         prefix = "\"";
         affix = "\"";
         val = v->string;
+    } else if (v->dptr.size() > 0) {
+        prefix = "D";
+        for (unsigned int i = 0; i < v->dptr.size(); i++) {
+            if (i != 0) {
+                val += ",";
+            }
+            val += v->dptr.at(i);
+        }
     }
 
     return prefix + val + affix;
@@ -73,6 +81,12 @@ std::pair<std::string, pseudojson::Value> pseudojson::stringToValue(std::string 
             x.at(1).erase(0, 1);
             val.data.d = std::stod(x.at(1));
             break;
+        case 'D':
+            x.at(1).erase(0, 1);
+            std::vector<std::string> a = split(x.at(1), ',');
+            for (unsigned int i = 0; i < a.size(); i++) {
+                val.data.dptr.push_back(std::stod(a.at(i)));
+            }
     }
     if (x.at(1).at(0) == '"') {
         x.at(1).erase(0, 1);
@@ -144,4 +158,14 @@ double& pseudojson::asAny<double>(Value& value) {
 template<>
 const double& pseudojson::asAny<double>(const Value& value) {
     return value.data.d;
+}
+
+template<>
+std::vector<double>& pseudojson::asAny<std::vector<double>>(Value& value) {
+    return value.data.dptr;
+}
+
+template<>
+const std::vector<double>& pseudojson::asAny<std::vector<double>>(const Value& value) {
+    return value.data.dptr;
 }

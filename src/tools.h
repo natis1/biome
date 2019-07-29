@@ -43,6 +43,7 @@ namespace pseudojson {
         std::string string;
         long lon = UNSET_INTVAL;
         double d = UNSET_DOUBLEVAL;
+        std::vector<double> dptr;
     };
 
     struct Value {
@@ -81,6 +82,12 @@ namespace pseudojson {
             data.lon = value;
             return *this;
         }
+        
+        Value& operator=(std::vector<double> value) {
+            data.dptr = value;
+            return *this;
+        }
+        
     };
 
     std::string getValue(const ValueData *v);
@@ -110,6 +117,12 @@ namespace pseudojson {
 
     template<>
     const double& asAny<double>(const Value& value);
+    
+    template<>
+    std::vector<double>& asAny<std::vector<double>>(Value& value);
+    
+    template<>
+    const std::vector<double>& asAny<std::vector<double>>(const Value& value);
 }
 
 template<typename Class, typename T>

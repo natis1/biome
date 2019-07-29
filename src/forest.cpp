@@ -29,9 +29,14 @@ struct saveFile* forest::newForest(saveFile *s, long biome = 0)
     s->dataVersion = DATA_VERSION;
     s->productiveSeconds = 0;
     s->trees = 0;
-    s->name = "meme " + std::to_string(biome);
-    s->supermeme = 3.242;
-
+    s->name = "meme " + std::to_string(biome);    
+    s->biomeSeed = time(0);
+    s->lastRunTime = 0;
+    s->dailyStreak = 0;
+    for (int i = 0; i < 7; i++) {
+        s->weeklyRundifficulties[i] = 0.0;
+        s->weeklyRuntimes[i] = 0.0;
+    }
 
     pseudojson::Value jsonForest = toJson(*s);
 
@@ -43,7 +48,33 @@ struct saveFile* forest::newForest(saveFile *s, long biome = 0)
 
 
 
-    std::cout << "meme " << std::endl;
     //std::cout << "Current Forest is " << jsonForest.data.subObject << std::endl;
     return s;
 }
+
+struct saveFile * forest::updateForest(forest::saveFile* s)
+{
+    // Pre 5
+    if (s->biomeSeed < 0) {
+        s->biomeSeed = time(0);
+        s->lastRunTime = 0;
+        s->dailyStreak = 0;
+        for (int i = 0; i < 7; i++) {
+            s->weeklyRundifficulties[i] = 0.0;
+            s->weeklyRuntimes[i] = 0.0;
+        }
+    }
+    
+    
+    pseudojson::Value jsonForest = toJson(*s);
+    
+    for( auto const& [key, val] : jsonForest.data.subObject ) {
+        std::cout << key << " : " << pseudojson::getValue(&val.data) << std::endl;
+    }
+    
+    pseudojson::writeToFile(jsonForest, "test.txt");
+    
+    s->dataVersion = DATA_VERSION;
+    return s;
+}
+

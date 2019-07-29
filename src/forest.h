@@ -20,11 +20,13 @@
 #define FOREST_H
 
 #include "tools.h"
+#include <assert.h>
 
 
 namespace forest
 {
-    const int DATA_VERSION = 3;
+    static const int DATA_VERSION = 5;
+    static const int OPTIONS_VERSION = 1;
 
     struct biome {
         std::string name;
@@ -63,29 +65,49 @@ namespace forest
         long biomeType;
         long trees;
         long productiveSeconds;
-        double supermeme;
+        long biomeSeed;
         std::string name;
+        
+        
+        long lastRunTime;
+        long dailyStreak;
+        std::vector<double> weeklyRuntimes;
+        std::vector<double> weeklyRundifficulties;
 
         bool operator==(const saveFile& rhs) const {
-            return std::tie(dataVersion, biomeType, trees, productiveSeconds) == std::tie(rhs.dataVersion, rhs.biomeType, rhs.trees, rhs.productiveSeconds);
+            assert (weeklyRundifficulties.size() == 7 && weeklyRuntimes.size() == 7);
+            
+            
+            return 
+            std::tie(dataVersion, biomeType, trees, productiveSeconds, biomeSeed, name, lastRunTime, dailyStreak, weeklyRuntimes[0], weeklyRuntimes[1], weeklyRuntimes[2], weeklyRuntimes[3], weeklyRuntimes[4], weeklyRuntimes[5], weeklyRuntimes[6], weeklyRundifficulties[0], weeklyRundifficulties[1], weeklyRundifficulties[2], weeklyRundifficulties[3], weeklyRundifficulties[4], weeklyRundifficulties[5], weeklyRundifficulties[6]) ==
+            std::tie(rhs.dataVersion, rhs.biomeType, rhs.trees, rhs.productiveSeconds, rhs.biomeSeed, rhs.name, rhs.lastRunTime, rhs.dailyStreak, rhs.weeklyRuntimes[0], rhs.weeklyRuntimes[1], rhs.weeklyRuntimes[2], rhs.weeklyRuntimes[3], rhs.weeklyRuntimes[4], rhs.weeklyRuntimes[5], rhs.weeklyRuntimes[6], rhs.weeklyRundifficulties[0], rhs.weeklyRundifficulties[1], rhs.weeklyRundifficulties[2], rhs.weeklyRundifficulties[3], rhs.weeklyRundifficulties[4], rhs.weeklyRundifficulties[5], rhs.weeklyRundifficulties[6]);
         }
 
-        constexpr static auto properties = std::make_tuple(
+        constexpr static auto properties = std::make_tuple
+           (
             property(&saveFile::dataVersion, "dataVersion"),
             property(&saveFile::biomeType, "biomeType"),
             property(&saveFile::trees, "trees"),
             property(&saveFile::productiveSeconds, "productiveSeconds"),
+            property(&saveFile::biomeSeed, "biomeSeed"),
             property(&saveFile::name, "name"),
-            property(&saveFile::supermeme, "supermeme")
-        );
+            property(&saveFile::lastRunTime, "lastRuntime"),
+            property(&saveFile::dailyStreak, "dailyStreak"),
+            property(&saveFile::weeklyRuntimes, "weeklyRuntimes"),
+            property(&saveFile::weeklyRundifficulties, "weeklyRunDifficulties")
+           );
     };
 
     struct optionsFile {
         long optionsVersion;
         long zoomLevel;
+        
+        // shrug
+        long configMask;
     };
 
     struct saveFile* newForest(saveFile *s, long biome);
+    struct saveFile* updateForest(saveFile *s);
 }
 
 #endif // FOREST_H

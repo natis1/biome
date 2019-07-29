@@ -25,6 +25,8 @@
 #include "forest.h"
 #include <sys/stat.h>
 
+namespace display_consts {
+
 const std::string STARTING_RANDOM_NAMES[] = { "West", "North", "East", "South", "Blue", "Green", "Rolling", "Red", "Fort", "Death", "First", "Starry", "Hidden"};
 const std::string RANDOM_NAMES[] = { "Gale", "Gulch", "River", "Forest", "Lake", "Wood", "Air", "Hill", "Stream", "Night", "Flame", "Dune", "Ground", "Fall"};
 const size_t STARTING_RANDOM_NAMES_SIZE = std::extent<decltype(STARTING_RANDOM_NAMES)>::value;
@@ -37,24 +39,30 @@ const std::string BIOME_DESCRIPTIONS[] = {
 
 const size_t NUM_BIOMES = std::extent<decltype(BIOME_DESCRIPTIONS)>::value;
 
+static const std::string SAVE_LOCATION = {"/.config/biome/"};
+
+}
 
 class display
 {
 public:
     display();
     static void sigabrtHandler(int sig);
+    static int getDir(std::string dir, std::vector<std::string> &files);
+    
 private:
     std::string getForestName();
     void forestNameHelper(bool state);
     void biomeTypeHelper(int biome);
     int getBiomeType();
-    int getDir(std::string dir, std::vector<std::string> &files);
     bool mainMenu();
     std::string mostRecentFile(std::vector<std::string> *files);
 
     std::string savePath;
     forest::saveFile sfile;
     forest::optionsFile ofile;
+    
+    void drawForest();
 
 };
 

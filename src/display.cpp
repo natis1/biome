@@ -24,15 +24,18 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <string.h>
+#include <assert.h>
+
+using namespace display_consts;
 
 
 display::display()
 {
     std::string biomefolder = std::getenv("HOME");
-    biomefolder += "/.config/biome/";
+    biomefolder += SAVE_LOCATION;
     std::cout << "Saving data to " << biomefolder << std::endl;
     mkdir(biomefolder.c_str(), 0755);
-    this->savePath = biomefolder;
+    savePath = biomefolder;
     initscr();
     noecho();
     start_color();
@@ -57,7 +60,7 @@ display::display()
 
     // True means the game was loaded and you are free to go on
     if (mainMenu()) {
-
+        drawForest();
     }
 
 /*
@@ -76,6 +79,19 @@ display::display()
     nodelay(stdscr, true); */
 }
 
+void display::drawForest()
+{
+    move(0, 0);
+    clrtobot();
+    std::cerr << "Forest seed is " << sfile.biomeSeed << std::endl;
+    
+    move(0, 0);
+    
+}
+
+
+
+
 int display::getDir(std::string dir, std::vector<std::string> &files)
 {
     DIR *dp;
@@ -86,7 +102,8 @@ int display::getDir(std::string dir, std::vector<std::string> &files)
     }
 
     while ((dirp = readdir(dp)) != NULL) {
-        if (strncmp(dirp->d_name, ".", 1) == 0)
+        std::string s = dirp->d_name;
+        if ( strncmp(dirp->d_name, ".", 1) == 0 || s.find(".conf") != s.npos)
             continue;
         files.push_back(std::string(dirp->d_name));
     }
@@ -100,7 +117,7 @@ std::string display::mostRecentFile(std::vector<std::string> *files)
     long bestTime = 0;
     std::string name;
 
-    for (int i = 0; i < files->size(); i++) {
+    for (unsigned int i = 0; i < files->size(); i++) {
         std::string fPath = savePath + files->at(i);
         char *filePath = &fPath[0u];
         struct stat attrib;
@@ -162,6 +179,10 @@ bool display::mainMenu()
         } else if (continueGame && (c == 'c' || c == 'C')) {
             // Continue listed game
             sfile = fromJson<forest::saveFile>(pseudojson::fileToPseudoJson(this->savePath + recentFile));
+            if (sfile.dataVersion < forest::DATA_VERSION) {
+                forest::updateForest(&sfile);
+                std::cout << "Updated forest to version: " << sfile.dataVersion << std::endl;
+            }
 
             return true;
         } else if (c >= '1' && c <= '9') {
@@ -183,7 +204,7 @@ void display::biomeTypeHelper(int biome)
     int x;
     std::string line;
     attron(COLOR_PAIR(1U));
-    for (int i = 0; i < NUM_BIOMES; i++) {
+    for (unsigned int i = 0; i < NUM_BIOMES; i++) {
         std::istringstream t(BIOME_DESCRIPTIONS[i]);
         (i % 2 == 1) ? x = 20 : x = 0;
         int j = 0;
@@ -209,7 +230,7 @@ void display::biomeTypeHelper(int biome)
 
 int display::getBiomeType()
 {
-    int biome = 0;
+    unsigned int biome = 0;
     biomeTypeHelper(biome);
 
     while (true) {
@@ -230,6 +251,9 @@ int display::getBiomeType()
             biomeTypeHelper(biome);
         }
     }
+    
+    assert(false);
+    return 0;
 }
 
 
