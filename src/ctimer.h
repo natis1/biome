@@ -46,11 +46,11 @@ public:
         long done_background_r;
         long done_background_g;
         long done_background_b;
-        
+
         bool operator==(const configData& rhs) const {
             return std::tie(text_foreground_r, text_foreground_g, text_foreground_b, text_background_r, text_background_g, text_background_b, bar_foreground_r, bar_foreground_g, bar_foreground_b, bar_background_r, bar_background_g, bar_background_b, done_foreground_r, done_foreground_g, done_foreground_b, done_background_r, done_background_g, done_background_b) == std::tie(rhs.text_foreground_r, rhs.text_foreground_g, rhs.text_foreground_b, rhs.text_background_r, rhs.text_background_g, rhs.text_background_b, rhs.bar_foreground_r, rhs.bar_foreground_g, rhs.bar_foreground_b, rhs.bar_background_r, rhs.bar_background_g, rhs.bar_background_b, rhs.done_foreground_r, rhs.done_foreground_g, rhs.done_foreground_b, rhs.done_background_r, rhs.done_background_g, rhs.done_background_b);
         }
-        
+
         constexpr static auto properties = std::make_tuple(
             property(&configData::text_foreground_r, "text_foreground_r"),
             property(&configData::text_foreground_g, "text_foreground_g"),
@@ -71,7 +71,8 @@ public:
             property(&configData::done_background_g, "done_background_g"),
             property(&configData::done_background_b, "done_background_b"));
     } config;
-    
+
+
     int colors[18];
     void startDisplay(std::string timerName, double timeTotal);
     void initConfigData();

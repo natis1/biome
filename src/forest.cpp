@@ -23,29 +23,30 @@
 
 using namespace forest;
 
-struct saveFile* forest::newForest(saveFile *s, long biome = 0)
+struct saveFile* forest::newForest(saveFile *s, long biome = 0, std::string name = "invalid")
 {
     s->biomeType = biome;
     s->dataVersion = DATA_VERSION;
     s->productiveSeconds = 0;
     s->trees = 0;
-    s->name = "meme " + std::to_string(biome);    
+    s->name = name;
     s->biomeSeed = time(0);
     s->lastRunTime = 0;
     s->dailyStreak = 0;
     for (int i = 0; i < 7; i++) {
-        s->weeklyRundifficulties[i] = 0.0;
-        s->weeklyRuntimes[i] = 0.0;
+        s->weeklyRundifficulties.push_back(0.0);
+        s->weeklyRuntimes.push_back(0.0);
     }
 
     pseudojson::Value jsonForest = toJson(*s);
 
     for( auto const& [key, val] : jsonForest.data.subObject ) {
-        std::cout << key << " : " << pseudojson::getValue(&val.data) << std::endl;
+        std::cerr << key << " : " << pseudojson::getValue(&val.data) << std::endl;
     }
 
     pseudojson::writeToFile(jsonForest, "test.txt");
 
+    std::cerr << "Wrote biome to file" << std::endl;
 
 
     //std::cout << "Current Forest is " << jsonForest.data.subObject << std::endl;
@@ -55,25 +56,25 @@ struct saveFile* forest::newForest(saveFile *s, long biome = 0)
 struct saveFile * forest::updateForest(forest::saveFile* s)
 {
     // Pre 5
-    if (s->biomeSeed < 0) {
+    if (s->dataVersion < 5) {
         s->biomeSeed = time(0);
         s->lastRunTime = 0;
         s->dailyStreak = 0;
         for (int i = 0; i < 7; i++) {
-            s->weeklyRundifficulties[i] = 0.0;
-            s->weeklyRuntimes[i] = 0.0;
+            s->weeklyRundifficulties.push_back(0.0);
+            s->weeklyRuntimes.push_back(0.0);
         }
     }
-    
-    
+
+
     pseudojson::Value jsonForest = toJson(*s);
-    
+
     for( auto const& [key, val] : jsonForest.data.subObject ) {
         std::cout << key << " : " << pseudojson::getValue(&val.data) << std::endl;
     }
-    
+
     pseudojson::writeToFile(jsonForest, "test.txt");
-    
+
     s->dataVersion = DATA_VERSION;
     return s;
 }

@@ -49,7 +49,7 @@ public:
     display();
     static void sigabrtHandler(int sig);
     static int getDir(std::string dir, std::vector<std::string> &files);
-    
+
 private:
     std::string getForestName();
     void forestNameHelper(bool state);
@@ -57,11 +57,14 @@ private:
     int getBiomeType();
     bool mainMenu();
     std::string mostRecentFile(std::vector<std::string> *files);
+    long getNumInhabitedTiles();
+    long getZoomLevel();
+    std::vector<bool> getPloppedTiles(long numPlopped, long int seed, int x, int y, double stdevPerX, double stdevPerY);
 
     std::string savePath;
     forest::saveFile sfile;
     forest::optionsFile ofile;
-    
+
     void drawForest();
 
 };

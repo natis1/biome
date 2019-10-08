@@ -17,6 +17,7 @@
  */
 
 #include "tools.h"
+#include <sstream>
 
 using namespace pseudojson;
 
@@ -41,7 +42,9 @@ std::string pseudojson::getValue(const pseudojson::ValueData* v)
             if (i != 0) {
                 val += ",";
             }
-            val += v->dptr.at(i);
+            std::ostringstream strs;
+            strs << v->dptr.at(i);
+            val += strs.str();
         }
     }
 

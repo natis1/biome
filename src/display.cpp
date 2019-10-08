@@ -25,6 +25,8 @@
 #include <dirent.h>
 #include <string.h>
 #include <assert.h>
+#include <math.h>
+#include <algorithm>
 
 using namespace display_consts;
 
@@ -79,14 +81,120 @@ display::display()
     nodelay(stdscr, true); */
 }
 
+long display::getZoomLevel()
+{
+    // Apparently log of 0 is undefined.
+    // Someone should ask the president of math to change that.
+    if (sfile.trees <= 0) {
+        return 0;
+    }
+    double logTrees = std::log10((double) sfile.trees);
+    if (logTrees < 3.0) {
+        return 0;
+    }
+    // Only start zooming in once the number of trees is over 1000. 1000 trees will fill about half the environment.
+    return ( (long) logTrees - 2);
+}
+
+long display::getNumInhabitedTiles()
+{
+    long zl = getZoomLevel();
+    long divisor = std::pow(10, zl);
+    return (sfile.trees / divisor);
+}
+
+
+std::vector<bool> display::getPloppedTiles(long numPlopped, long int seed, int x, int y, double stdevPerX, double stdevPerY)
+{
+    std::vector<std::pair<double, int>> array;
+    array.reserve(x * y);
+    double midX = x / 2.0 - 0.5;
+    double midY = y / 2.0 - 0.5;
+    std::mt19937 rng(seed);
+    std::uniform_real_distribution<double> rn(0.0, 65536.0);
+
+    for (int i = 0; i < x; i++) {
+        for (int j = 0; j < y; j++) {
+            double standardX = (i - midX) * stdevPerX;
+            double standardY = (j - midY) * stdevPerY;
+            if (standardX < 0 )
+                standardX = - standardX;
+            if (standardY < 0)
+                standardY = - standardY;
+            array.push_back(std::make_pair(((double) std::pow(M_E, (- (std::pow(standardX, 2.0) + std::pow(standardY, 2.0)))) * rn(rng)), (i * y + j)));
+        }
+    }
+    std::sort(array.rbegin(), array.rend());
+
+    std::vector<int> tileOrder;
+    std::vector<bool> areTilesPlopped;
+    tileOrder.reserve(x * y);
+    areTilesPlopped.reserve(x * y);
+    for (int i = 0; i < (x * y); i++) {
+        tileOrder.push_back(array[i].second);
+        areTilesPlopped.push_back(false);
+    }
+
+    // Invert vector code.
+    for (int i = 0; i < numPlopped; i++) {
+        areTilesPlopped.at(tileOrder.at(i)) = true;
+    }
+    return areTilesPlopped;
+}
+
+
+
 void display::drawForest()
 {
-    move(0, 0);
-    clrtobot();
+    nodelay(stdscr, FALSE);
     std::cerr << "Forest seed is " << sfile.biomeSeed << std::endl;
-    
-    move(0, 0);
-    
+    getch();
+    while (true) {
+        std::mt19937 rng(sfile.biomeSeed);
+        std::uniform_int_distribution<int> colorRn(0, 5);
+        std::uniform_int_distribution<int> inhabitedRn(0, forest::biomes[sfile.biomeType].inhabitedSymbols.size() - 1);
+        std::uniform_int_distribution<int> uninhabitedRn(0, forest::biomes[sfile.biomeType].inhabitedSymbols.size() - 1);
+        long tiles = getNumInhabitedTiles();
+        long zoomLevel = getZoomLevel();
+        move(0, 0);
+        clrtobot();
+        move(0, 0);
+        const int x = 22;
+        const int y = 80;
+        char forestGrid[x][y];
+
+        init_color(90, forest::biomes[sfile.biomeType].inhabitedColorPair[0], forest::biomes[sfile.biomeType].inhabitedColorPair[1], forest::biomes[sfile.biomeType].inhabitedColorPair[2]);
+        init_color(91, forest::biomes[sfile.biomeType].inhabitedColorPair[3], forest::biomes[sfile.biomeType].inhabitedColorPair[4], forest::biomes[sfile.biomeType].inhabitedColorPair[5]);
+        init_pair(14, 90, 91);
+        init_color(92, forest::biomes[sfile.biomeType].uninhabitedColorPair[0], forest::biomes[sfile.biomeType].uninhabitedColorPair[1], forest::biomes[sfile.biomeType].uninhabitedColorPair[2]);
+        init_color(93, forest::biomes[sfile.biomeType].uninhabitedColorPair[3], forest::biomes[sfile.biomeType].uninhabitedColorPair[4], forest::biomes[sfile.biomeType].uninhabitedColorPair[5]);
+        init_pair(15, 92, 93);
+
+        std::vector<bool> plTiles = getPloppedTiles(tiles, sfile.biomeSeed + zoomLevel, x, y, 4.0 / x, 4.0 / y);
+        for (int i = 0; i < x; i++) {
+            for (int j = 0; j < y; j++) {
+                if (plTiles.at(i * y + j)) {
+                    forestGrid[i][j] = forest::biomes[sfile.biomeType].inhabitedSymbols[inhabitedRn(rng)];
+                } else {
+                    forestGrid[i][j] = forest::biomes[sfile.biomeType].uninhabitedSymbols[uninhabitedRn(rng)];
+                }
+            }
+        }
+
+        for (int i = 0; (i < x) && (i < LINES - 2); i++) {
+            for (int j = 0; (j < y) && (j < COLS); j++) {
+                move(i, j);
+                if (plTiles.at(i * y + j))
+                    attron(COLOR_PAIR(14U));
+                else
+                    attron(COLOR_PAIR(15U));
+                addch(forestGrid[i][j]);
+            }
+        }
+
+        getch();
+    }
+
 }
 
 
@@ -100,15 +208,21 @@ int display::getDir(std::string dir, std::vector<std::string> &files)
         std::cout << "Error(" << errno << ") opening " << dir << std::endl;
         return errno;
     }
+    int err = 0;
 
     while ((dirp = readdir(dp)) != NULL) {
         std::string s = dirp->d_name;
         if ( strncmp(dirp->d_name, ".", 1) == 0 || s.find(".conf") != s.npos)
             continue;
-        files.push_back(std::string(dirp->d_name));
+        if (s.length() > 6 && (s.compare(s.size() - 6, 6, ".biome") == 0)) {
+            files.push_back(std::string(dirp->d_name));
+        } else {
+            err = 420;
+            printw(("Possible biome file \"" + s + "\" does not end in .biome. Please rename it if it's a valid file.\n").c_str());
+        }
     }
     closedir(dp);
-    return 0;
+    return err;
 }
 
 // most recent file
@@ -134,7 +248,14 @@ std::string display::mostRecentFile(std::vector<std::string> *files)
 bool display::mainMenu()
 {
     std::vector<std::string> files = std::vector<std::string>();
-    getDir(this->savePath, files);
+    move(0, 0);
+    if (getDir(this->savePath, files) != 0) {
+        printw("Press any key to continue, or ^C to exit");
+        std::cerr << "Press any key to continue, or ^C to exit" << std::endl;
+        getch();
+        move(0, 0);
+        clrtobot();
+    }
     bool newGame = (files.size() < 9);
     bool continueGame = (files.size() > 0);
     std::string recentFile;
@@ -143,19 +264,19 @@ bool display::mainMenu()
         std::cerr << "most recent file is: " << recentFile << std::endl;
     }
 
-    move(4, 0);
+    move(1, 0);
     if (newGame) {
         printw("(N)ew biome\n");
     }
     if (continueGame) {
         printw("(C)ontinue biome: ");
-        printw(recentFile.c_str());
+        printw(recentFile.substr(0, recentFile.length() - 6).c_str());
         printw("\n");
     }
     printw("Or load a biome below with a number key:\n\n");
     // Bleh, I have to do the awful 1 indexed for loop
     for (int i = 1; i <= files.size(); i++) {
-        printw("(%d) %s", i, files.at( (i - 1) ).c_str());
+        printw("(%d) %s\n", i, files.at( (i - 1) ).substr(0, files.at( (i - 1)).length() - 6).c_str());
     }
     while (true) {
         move(LINES - 1, COLS - 1);
@@ -171,29 +292,37 @@ bool display::mainMenu()
             move(0, 0);
             clrtobot();
             std::string biomeName = getForestName();
-            forest::newForest(&sfile, 3);
-            pseudojson::writeToFile(toJson(sfile), this->savePath + biomeName);
+            forest::newForest(&sfile, biomeType, biomeName);
+            pseudojson::writeToFile(toJson(sfile), this->savePath + biomeName + ".biome");
             std::cout << "created new file" << std::endl;
 
             return true;
         } else if (continueGame && (c == 'c' || c == 'C')) {
             // Continue listed game
-            sfile = fromJson<forest::saveFile>(pseudojson::fileToPseudoJson(this->savePath + recentFile));
+            sfile = fromJsonForest<forest::saveFile>(pseudojson::fileToPseudoJson(this->savePath + recentFile));
             if (sfile.dataVersion < forest::DATA_VERSION) {
-                forest::updateForest(&sfile);
+                sfile = *forest::updateForest(&sfile);
                 std::cout << "Updated forest to version: " << sfile.dataVersion << std::endl;
             }
+            pseudojson::writeToFile(toJson(sfile), this->savePath + sfile.name + ".biome");
 
             return true;
         } else if (c >= '1' && c <= '9') {
             int realInt = c - '0';
             if (realInt <= files.size()) {
                 realInt--;
-                sfile = fromJson<forest::saveFile>(pseudojson::fileToPseudoJson(this->savePath + files[realInt]));
+                sfile = fromJsonForest<forest::saveFile>(pseudojson::fileToPseudoJson(this->savePath + files[realInt]));
+                if (sfile.dataVersion < forest::DATA_VERSION) {
+                    sfile = *forest::updateForest(&sfile);
+                    std::cout << "Updated forest to version: " << sfile.dataVersion << std::endl;
+                }
+                pseudojson::writeToFile(toJson(sfile), this->savePath + sfile.name + ".biome");
+
                 return true;
             }
         }
     }
+    exit(0);
     return false;
 }
 
@@ -251,7 +380,8 @@ int display::getBiomeType()
             biomeTypeHelper(biome);
         }
     }
-    
+
+
     assert(false);
     return 0;
 }

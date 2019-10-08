@@ -44,6 +44,7 @@ namespace pseudojson {
         long lon = UNSET_INTVAL;
         double d = UNSET_DOUBLEVAL;
         std::vector<double> dptr;
+        bool isValid;
     };
 
     struct Value {
@@ -82,12 +83,12 @@ namespace pseudojson {
             data.lon = value;
             return *this;
         }
-        
+
         Value& operator=(std::vector<double> value) {
             data.dptr = value;
             return *this;
         }
-        
+
     };
 
     std::string getValue(const ValueData *v);
@@ -117,10 +118,10 @@ namespace pseudojson {
 
     template<>
     const double& asAny<double>(const Value& value);
-    
+
     template<>
     std::vector<double>& asAny<std::vector<double>>(Value& value);
-    
+
     template<>
     const std::vector<double>& asAny<std::vector<double>>(const Value& value);
 }
@@ -147,10 +148,12 @@ template<typename T>
 T fromJson(const pseudojson::Value& data) {
     T object;
 
+    //constexpr auto v1Props = std::tuple_size<decltype(T::properties_v1)>::value;
     // We first get the number of properties
     constexpr auto nbProperties = std::tuple_size<decltype(T::properties)>::value;
 
     // We iterate on the index sequence of size `nbProperties`
+
     for_sequence(std::make_index_sequence<nbProperties>{}, [&](auto i){
         // get the property
         constexpr auto property = std::get<i>(T::properties);
@@ -162,6 +165,45 @@ T fromJson(const pseudojson::Value& data) {
         object.*(property.member) = pseudojson::asAny<Type>(data[property.name]);
     });
 
+
+    return object;
+}
+
+// unserialize function
+template<typename T>
+T fromJsonForest(const pseudojson::Value& data) {
+    T object;
+
+    constexpr auto nbProperties_v1 = std::tuple_size<decltype(T::properties_v1)>::value;
+
+    int dataVers = 0;
+
+    for_sequence(std::make_index_sequence<nbProperties_v1>{}, [&](auto i){
+        constexpr auto property = std::get<i>(T::properties_v1);
+        using Type = typename decltype(property)::Type;
+        object.*(property.member) = pseudojson::asAny<Type>(data[property.name]);
+        if (property.name == "dataVersion") {
+            dataVers = data[property.name].data.lon;
+        }
+    });
+
+    if (dataVers == 3) {
+        constexpr auto nbProperties = std::tuple_size<decltype(T::properties_v3)>::value;
+
+        for_sequence(std::make_index_sequence<nbProperties>{}, [&](auto i){
+            constexpr auto property = std::get<i>(T::properties_v3);
+            using Type = typename decltype(property)::Type;
+            object.*(property.member) = pseudojson::asAny<Type>(data[property.name]);
+        });
+    } else if (dataVers == 5) {
+        constexpr auto nbProperties = std::tuple_size<decltype(T::properties)>::value;
+
+        for_sequence(std::make_index_sequence<nbProperties>{}, [&](auto i){
+            constexpr auto property = std::get<i>(T::properties);
+            using Type = typename decltype(property)::Type;
+            object.*(property.member) = pseudojson::asAny<Type>(data[property.name]);
+        });
+    }
     return object;
 }
 
