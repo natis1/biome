@@ -59,7 +59,7 @@ private:
     std::string mostRecentFile(std::vector<std::string> *files);
     long getNumInhabitedTiles();
     long getZoomLevel();
-    std::vector<bool> getPloppedTiles(long numPlopped, long int seed, int x, int y, double stdevPerX, double stdevPerY);
+    static std::vector<bool> getPloppedTiles(long numPlopped, long int seed, int x, int y, double stdevPerX, double stdevPerY);
 
     std::string savePath;
     forest::saveFile sfile;
