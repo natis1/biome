@@ -41,7 +41,14 @@ display::display()
     initscr();
     noecho();
     start_color();
-    std::cerr << "has colors? " << has_colors() << " can change colors?" << can_change_color() << " num colors? " << COLORS << std::endl;
+    std::cerr << "has colors? " << has_colors() << " can change colors? " << can_change_color() << " num colors? " << COLORS << std::endl;
+    if (!has_colors() || !can_change_color() || COLORS < 256) {
+        move(0, 0);
+        printw("Your terminal seems to lack true color support.\nThis might be because it's old, or because the TERM environment variable isn't properly set to:\nTERM=xterm-256color\nYou can still try to play the game, but the experience might be worse.\nIt's recommended you use a terminal with full color compatibility like xfce4-terminal or even xterm.\nPress any key to continue or ctrl+C to quit");
+        getch();
+        move(0, 0);
+        clrtobot();
+    }
     init_pair(1, COLOR_WHITE, COLOR_BLACK);
     init_pair(2, COLOR_MAGENTA, COLOR_BLACK);
     init_pair(3, COLOR_BLUE, COLOR_BLACK);
@@ -54,6 +61,7 @@ display::display()
     init_pair(7, COLOR_GREEN, COLOR_BLACK);
     init_color(68, 200, 1000, 1000); // Cyan
     init_pair(8, 68, COLOR_BLACK);
+
 
     signal(SIGABRT, display::sigabrtHandler);
     signal(SIGKILL, display::sigabrtHandler);
@@ -163,12 +171,12 @@ void display::drawForest()
         const int y = 80;
         char forestGrid[x][y];
 
-        init_color(90, forest::biomes[sfile.biomeType].inhabitedColorPair[0], forest::biomes[sfile.biomeType].inhabitedColorPair[1], forest::biomes[sfile.biomeType].inhabitedColorPair[2]);
-        init_color(91, forest::biomes[sfile.biomeType].inhabitedColorPair[3], forest::biomes[sfile.biomeType].inhabitedColorPair[4], forest::biomes[sfile.biomeType].inhabitedColorPair[5]);
-        init_pair(14, 90, 91);
-        init_color(92, forest::biomes[sfile.biomeType].uninhabitedColorPair[0], forest::biomes[sfile.biomeType].uninhabitedColorPair[1], forest::biomes[sfile.biomeType].uninhabitedColorPair[2]);
-        init_color(93, forest::biomes[sfile.biomeType].uninhabitedColorPair[3], forest::biomes[sfile.biomeType].uninhabitedColorPair[4], forest::biomes[sfile.biomeType].uninhabitedColorPair[5]);
-        init_pair(15, 92, 93);
+        init_color(170, forest::biomes[sfile.biomeType].inhabitedColorPair[0], forest::biomes[sfile.biomeType].inhabitedColorPair[1], forest::biomes[sfile.biomeType].inhabitedColorPair[2]);
+        init_color(171, forest::biomes[sfile.biomeType].inhabitedColorPair[3], forest::biomes[sfile.biomeType].inhabitedColorPair[4], forest::biomes[sfile.biomeType].inhabitedColorPair[5]);
+        init_pair(14, 170, 171);
+        init_color(172, forest::biomes[sfile.biomeType].uninhabitedColorPair[0], forest::biomes[sfile.biomeType].uninhabitedColorPair[1], forest::biomes[sfile.biomeType].uninhabitedColorPair[2]);
+        init_color(173, forest::biomes[sfile.biomeType].uninhabitedColorPair[3], forest::biomes[sfile.biomeType].uninhabitedColorPair[4], forest::biomes[sfile.biomeType].uninhabitedColorPair[5]);
+        init_pair(15, 172, 173);
 
         std::vector<bool> plTiles = getPloppedTiles(tiles, sfile.biomeSeed + zoomLevel, x, y, 4.0 / x, 4.0 / y);
         for (int i = 0; i < x; i++) {
@@ -278,6 +286,11 @@ bool display::mainMenu()
     for (int i = 1; i <= files.size(); i++) {
         printw("(%d) %s\n", i, files.at( (i - 1) ).substr(0, files.at( (i - 1)).length() - 6).c_str());
     }
+
+    init_color(65, 0, 0, 0);
+    init_pair(65, 65, COLOR_BLACK);
+    attron(COLOR_PAIR(65U));
+    printw("\nCan you see this text?\nYour terminal emulator lacks custom colors, but is pretending to have them.\nThese are known to be broken on qterminal and konsole.\nFor other terminals, check your emulator settings.");
     while (true) {
         move(LINES - 1, COLS - 1);
         int c = getch();
