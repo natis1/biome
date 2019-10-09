@@ -114,10 +114,10 @@ namespace forest
 
     struct optionsFile {
         long optionsVersion;
-        long zoomLevel;
+        long blockWebsites;
+        std::vector<std::string> sitesBlocked;
+        long blockInternet;
 
-        // shrug
-        long configMask;
     };
 
     struct saveFile* newForest(saveFile *s, long biome, std::string name);

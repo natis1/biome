@@ -60,7 +60,9 @@ private:
     long getNumInhabitedTiles();
     long getZoomLevel();
     static std::vector<bool> getPloppedTiles(long numPlopped, long int seed, int x, int y, double stdevPerX, double stdevPerY);
-
+    std::vector<int> forestOpacity();
+    std::vector<int> adjacentTileOpacity();
+    long forestHealth;
     std::string savePath;
     forest::saveFile sfile;
     forest::optionsFile ofile;

@@ -150,10 +150,63 @@ std::vector<bool> display::getPloppedTiles(long numPlopped, long int seed, int x
     return areTilesPlopped;
 }
 
+std::vector<int> display::forestOpacity()
+{
+    std::vector<int> newColors;
+
+    for (int i = 0; i < 6; i++) {
+        int c1 = forest::biomes[sfile.biomeType].inhabitedColorPair[i];
+        int c2 = forest::biomes[sfile.biomeType].uninhabitedColorPair[i];
+        // Why? Because how our eyes see color. With 1.0 it transitions too slowly at low healths.
+        double fh = std::pow(forestHealth / (100.0), 0.8);
+
+        int weightedAvg = (c1 * fh ) + (c2 * (1 - fh));
+        newColors.push_back(weightedAvg);
+    }
+
+    return newColors;
+}
+
+
+std::vector<int> display::adjacentTileOpacity()
+{
+    std::vector<int> newColors;
+
+    for (int i = 0; i < 6; i++) {
+        int c1 = forest::biomes[sfile.biomeType].inhabitedColorPair[i];
+        int c2 = forest::biomes[sfile.biomeType].uninhabitedColorPair[i];
+        // Why? Because how our eyes see color. With 1.0 it transitions too slowly at low healths.
+        double fh = std::pow(forestHealth / (100.0), 0.8);
+
+        std::vector<int> a;
+        a.push_back((c1 * (fh - 0.1 ) ) + (c2 * (1.1 - fh)));
+        a.push_back((c1 * (fh - 0.2 ) ) + (c2 * (1.2 - fh)));
+        a.push_back((c1 * (fh - 0.3 ) ) + (c2 * (1.3 - fh)));
+        a.push_back((c1 * (fh - 0.4 ) ) + (c2 * (1.4 - fh)));
+        a.push_back((c1 * (fh - 0.5 ) ) + (c2 * (1.5 - fh)));
+        a.push_back((c1 * (fh - 0.6 ) ) + (c2 * (1.6 - fh)));
+        a.push_back((c1 * (fh - 0.7 ) ) + (c2 * (1.7 - fh)));
+        a.push_back((c1 * (fh - 0.8 ) ) + (c2 * (1.8 - fh)));
+        a.push_back((c1 * (fh - 0.9 ) ) + (c2 * (1.9 - fh)));
+
+        for (int j = 0; j < a.size(); j++) {
+            if (0.1 * (j + 1) > fh) {
+                a[j] = c2;
+            }
+            newColors.push_back(a[j]);
+        }
+    }
+
+    return newColors;
+
+}
+
+
 
 
 void display::drawForest()
 {
+    forestHealth = 0;
     nodelay(stdscr, FALSE);
     std::cerr << "Forest seed is " << sfile.biomeSeed << std::endl;
     getch();
@@ -171,12 +224,21 @@ void display::drawForest()
         const int y = 80;
         char forestGrid[x][y];
 
-        init_color(170, forest::biomes[sfile.biomeType].inhabitedColorPair[0], forest::biomes[sfile.biomeType].inhabitedColorPair[1], forest::biomes[sfile.biomeType].inhabitedColorPair[2]);
-        init_color(171, forest::biomes[sfile.biomeType].inhabitedColorPair[3], forest::biomes[sfile.biomeType].inhabitedColorPair[4], forest::biomes[sfile.biomeType].inhabitedColorPair[5]);
-        init_pair(14, 170, 171);
-        init_color(172, forest::biomes[sfile.biomeType].uninhabitedColorPair[0], forest::biomes[sfile.biomeType].uninhabitedColorPair[1], forest::biomes[sfile.biomeType].uninhabitedColorPair[2]);
-        init_color(173, forest::biomes[sfile.biomeType].uninhabitedColorPair[3], forest::biomes[sfile.biomeType].uninhabitedColorPair[4], forest::biomes[sfile.biomeType].uninhabitedColorPair[5]);
-        init_pair(15, 172, 173);
+        std::vector<int> biomeColors = forestOpacity();
+
+        init_color(80, biomeColors[0], biomeColors[1], biomeColors[2]);
+        init_color(81, biomeColors[3], biomeColors[4], biomeColors[5]);
+        init_pair(14, 80, 81);
+        init_color(82, forest::biomes[sfile.biomeType].uninhabitedColorPair[0], forest::biomes[sfile.biomeType].uninhabitedColorPair[1], forest::biomes[sfile.biomeType].uninhabitedColorPair[2]);
+        init_color(83, forest::biomes[sfile.biomeType].uninhabitedColorPair[3], forest::biomes[sfile.biomeType].uninhabitedColorPair[4], forest::biomes[sfile.biomeType].uninhabitedColorPair[5]);
+        init_pair(15, 82, 83);
+
+        std::vector<int> adjColors = adjacentTileOpacity();
+        for (int i = 0; i < 9; i++) {
+            init_color(90 + 2 * i, adjColors[0 + i], adjColors[9 + i], adjColors[18 + i]);
+            init_color(91 + 2 * i, adjColors[27 + i], adjColors[36 + i], adjColors[45 + i]);
+            init_pair(16 + i, 90 + 2 * i, 91 + 2 * i);
+        }
 
         std::vector<bool> plTiles = getPloppedTiles(tiles, sfile.biomeSeed + zoomLevel, x, y, 4.0 / x, 4.0 / y);
         for (int i = 0; i < x; i++) {
@@ -194,13 +256,40 @@ void display::drawForest()
                 move(i, j);
                 if (plTiles.at(i * y + j))
                     attron(COLOR_PAIR(14U));
-                else
-                    attron(COLOR_PAIR(15U));
+                else {
+                    const int boundarySize = 8;
+                    int leftExtents = (j < boundarySize) ? j : boundarySize;
+                    int rightExtents = (j > (y - (1 + boundarySize))) ? (y - j) : (1 + boundarySize);
+                    int topExtents = (i < boundarySize) ? i : boundarySize;
+                    int botExtents = (i > (x - (1 + boundarySize))) ? (x - i) : (1 + boundarySize);
+                    int totalTiles = 0;
+                    int treeTiles = 0;
+
+                    for (int k = -topExtents; k < botExtents; k++) {
+                        for (int l = - leftExtents; l < rightExtents; l++) {
+                            totalTiles++;
+                            if (plTiles.at( (i + k) * y + (j + l))) {
+                                treeTiles++;
+                            }
+                        }
+                    }
+                    double forestCover = ((double) treeTiles) / totalTiles;
+                    forestCover = std::pow(forestCover, 0.3);
+                    forestCover = forestCover * 8.999;
+                    attron(COLOR_PAIR(24U - (std::floor(forestCover))));
+                }
                 addch(forestGrid[i][j]);
             }
         }
+        addch('\n');
+        attron(COLOR_PAIR(1U));
+        printw(("Biome health " + std::to_string(forestHealth)).c_str());
 
         getch();
+        forestHealth++;
+        if (forestHealth > 100) {
+            forestHealth = 0;
+        }
     }
 
 }

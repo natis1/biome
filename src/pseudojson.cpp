@@ -46,6 +46,21 @@ std::string pseudojson::getValue(const pseudojson::ValueData* v)
             strs << v->dptr.at(i);
             val += strs.str();
         }
+    } else if (v->boolSetState != UNSET_INTVAL) {
+        prefix = "B_";
+        if (v->boolSetState == 1) {
+            val = "TRUE";
+        } else {
+            val = "FALSE";
+        }
+    } else if (v->sptr.size() > 0) {
+        prefix = "S_ARRAY ";
+        for (unsigned int i = 0; i < v->sptr.size(); i++) {
+            if (i != 0) {
+                val += ",";
+            }
+            val += v->sptr.at(i);
+        }
     }
 
     return prefix + val + affix;
@@ -84,12 +99,27 @@ std::pair<std::string, pseudojson::Value> pseudojson::stringToValue(std::string 
             x.at(1).erase(0, 1);
             val.data.d = std::stod(x.at(1));
             break;
-        case 'D':
+        case 'B':
+            if (x.at(1).at(2) == 'T' || x.at(1).at(2) == 't') {
+                val.data.boolSetState = 1;
+            } else {
+                val.data.boolSetState = 0;
+            }
+            break;
+        case 'S': {
+            x.at(1).erase(0, 8);
+            std::vector<std::string> a = split(x.at(1), ',');
+            for (unsigned int i = 0; i < a.size(); i++)
+                val.data.sptr.push_back(a.at(i));
+            break;
+        }
+        case 'D': {
             x.at(1).erase(0, 1);
             std::vector<std::string> a = split(x.at(1), ',');
             for (unsigned int i = 0; i < a.size(); i++) {
                 val.data.dptr.push_back(std::stod(a.at(i)));
             }
+        }
     }
     if (x.at(1).at(0) == '"') {
         x.at(1).erase(0, 1);
@@ -144,6 +174,16 @@ const long& pseudojson::asAny<long>(const Value& value) {
 }
 
 template<>
+bool& pseudojson::asAny<bool>(Value& value) {
+    return value.data.boolSetBool;
+}
+
+template<>
+const bool& pseudojson::asAny<bool>(const Value& value) {
+    return value.data.boolSetBool;
+}
+
+template<>
 const std::string& pseudojson::asAny<std::string>(const Value& value) {
     return value.data.string;
 }
@@ -172,3 +212,15 @@ template<>
 const std::vector<double>& pseudojson::asAny<std::vector<double>>(const Value& value) {
     return value.data.dptr;
 }
+
+
+template<>
+std::vector<std::string>& pseudojson::asAny<std::vector<std::string>>(Value& value) {
+    return value.data.sptr;
+}
+
+template<>
+const std::vector<std::string>& pseudojson::asAny<std::vector<std::string>>(const Value& value) {
+    return value.data.sptr;
+}
+

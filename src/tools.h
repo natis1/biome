@@ -44,7 +44,9 @@ namespace pseudojson {
         long lon = UNSET_INTVAL;
         double d = UNSET_DOUBLEVAL;
         std::vector<double> dptr;
-        bool isValid;
+        std::vector<std::string> sptr;
+        long boolSetState = UNSET_INTVAL;
+        bool boolSetBool;
     };
 
     struct Value {
@@ -71,6 +73,13 @@ namespace pseudojson {
 
         Value& operator=(long value) {
             data.lon = value;
+            data.boolSetBool = value;
+            return *this;
+        }
+
+        Value& operator=(bool value) {
+            data.boolSetState = (value) ? 1 : 0;
+            data.boolSetBool = value;
             return *this;
         }
 
@@ -86,6 +95,11 @@ namespace pseudojson {
 
         Value& operator=(std::vector<double> value) {
             data.dptr = value;
+            return *this;
+        }
+
+        Value& operator=(std::vector<std::string> value) {
+            data.sptr = value;
             return *this;
         }
 
@@ -106,6 +120,12 @@ namespace pseudojson {
 
     template<>
     const long& asAny<long>(const Value& value);
+
+    template<>
+    bool& asAny<bool>(Value& value);
+
+    template<>
+    const bool& asAny<bool>(const Value& value);
 
     template<>
     const std::string& asAny<std::string>(const Value& value);
