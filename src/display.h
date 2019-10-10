@@ -49,6 +49,7 @@ public:
     display();
     static void sigabrtHandler(int sig);
     static int getDir(std::string dir, std::vector<std::string> &files);
+    static void signalReset();
 
 private:
     std::string getForestName();
@@ -60,6 +61,7 @@ private:
     long getNumInhabitedTiles();
     long getZoomLevel();
     static std::vector<bool> getPloppedTiles(long numPlopped, long int seed, int x, int y, double stdevPerX, double stdevPerY);
+    static std::string getScaleString(long scale);
     std::vector<int> forestOpacity();
     std::vector<int> adjacentTileOpacity();
     long forestHealth;
@@ -68,6 +70,8 @@ private:
     forest::optionsFile ofile;
 
     void drawForest();
+    void drawStatsScreen();
+
 
 };
 

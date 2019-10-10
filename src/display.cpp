@@ -27,9 +27,14 @@
 #include <assert.h>
 #include <math.h>
 #include <algorithm>
+#include <unistd.h>
+#include <thread>
 
 using namespace display_consts;
 
+// yuck
+static volatile sig_atomic_t last_signal = 0;
+static volatile bool handing_signals = false;
 
 display::display()
 {
@@ -52,27 +57,36 @@ display::display()
     init_pair(1, COLOR_WHITE, COLOR_BLACK);
     init_pair(2, COLOR_MAGENTA, COLOR_BLACK);
     init_pair(3, COLOR_BLUE, COLOR_BLACK);
-    init_color(65, 750, 750, 750); // Light grey
-    init_pair(4, 65, COLOR_BLACK);
-    init_color(66, 1000, 1000, 400); // Bright yellow
-    init_pair(5, 66, COLOR_BLACK);
-    init_color(67, 1000, 600, 300); // Orange
-    init_pair(6, 67, COLOR_BLACK);
+    init_color(66, 750, 750, 750); // Light grey
+    init_pair(4, 66, COLOR_BLACK);
+    init_color(67, 1000, 1000, 400); // Bright yellow
+    init_pair(5, 67, COLOR_BLACK);
+    init_color(68, 1000, 600, 300); // Orange
+    init_pair(6, 68, COLOR_BLACK);
     init_pair(7, COLOR_GREEN, COLOR_BLACK);
-    init_color(68, 200, 1000, 1000); // Cyan
-    init_pair(8, 68, COLOR_BLACK);
+    init_color(69, 200, 1000, 1000); // Cyan
+    init_pair(8, 69, COLOR_BLACK);
+    init_pair(9, COLOR_BLACK, COLOR_RED);
 
-
-    signal(SIGABRT, display::sigabrtHandler);
-    signal(SIGKILL, display::sigabrtHandler);
-    signal(SIGSEGV, display::sigabrtHandler);
-    signal(SIGTSTP, display::sigabrtHandler);
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(struct sigaction));
+    sa.sa_handler = &sigabrtHandler;
+    sa.sa_flags = 0;
+    sigemptyset(&(sa.sa_mask));
+    sigaddset(&(sa.sa_mask), SIGINT);
+    if (sigaction(SIGINT, &sa, NULL) == -1 || sigaction(SIGTSTP, &sa, NULL) == -1 || sigaction(SIGABRT, &sa, NULL)) {
+        perror("sigaction error");
+        return;
+    }
+    std::thread t1(display::signalReset);
 
     // True means the game was loaded and you are free to go on
-    if (mainMenu()) {
-        drawForest();
+    bool mm = mainMenu();
+    while (!mm) {
+        mm = mainMenu();
     }
-
+    drawForest();
+    endwin();
 /*
     if (std::ifstream(biomefolder + "forest")) {
         sfile = fromJson<forest::saveFile>(pseudojson::fileToPseudoJson(biomefolder + "forest"));
@@ -201,6 +215,47 @@ std::vector<int> display::adjacentTileOpacity()
 
 }
 
+std::string display::getScaleString(long scale)
+{
+    if (scale < 2) {
+        return (scale == 0) ?  "1" : "2.5";
+    } else {
+        std::string sca;
+        if (scale % 2 == 1) {
+            sca = "25";
+            for (int i = 3; i < scale; i = i + 2) {
+                sca += "0";
+            }
+        } else {
+            sca = "10";
+            for (int i = 3; i < scale; i = i + 2) {
+                sca += "0";
+            }
+        }
+        if (sca.size() >= 8) {
+            sca = sca.substr(0, sca.size() - 6);
+            sca += "M"; // wow
+        } else if (sca.size() >= 5) {
+            sca = sca.substr(0, sca.size() - 3);
+            sca += "k";
+        }
+        return sca;
+    }
+}
+
+
+
+void display::drawStatsScreen()
+{
+    // I dunno the actual one. This is my best layman's guess.
+    const long healthyBugTreeRatio = 5000;
+    long actualInsectCount = (long) (healthyBugTreeRatio * (forestHealth / 100.0) * forest::biomes[sfile.biomeType].insectQuantityModifier);
+    long uniqueInsectSpecies = std::pow(sfile.trees, 0.02);
+    move(1, 0);
+    printw("Biome type: \n");
+    printw("Unique insect species ");
+
+}
 
 
 
@@ -208,8 +263,8 @@ void display::drawForest()
 {
     forestHealth = 0;
     nodelay(stdscr, FALSE);
-    std::cerr << "Forest seed is " << sfile.biomeSeed << std::endl;
-    getch();
+    //std::cerr << "Forest seed is " << sfile.biomeSeed << std::endl;
+    //getch();
     while (true) {
         std::mt19937 rng(sfile.biomeSeed);
         std::uniform_int_distribution<int> colorRn(0, 5);
@@ -281,14 +336,41 @@ void display::drawForest()
                 addch(forestGrid[i][j]);
             }
         }
+        int xpos, ypos;
+        getyx(stdscr, ypos, xpos);
+        if (xpos != 0)
+            addch('\n');
+
+        if (forestHealth < 100) {
+            attron(COLOR_PAIR(1U));
+        } else {
+            attron(COLOR_PAIR(7U));
+        }
+        printw("Health [");
+        int j = forestHealth;
+        for (int i = 0; i < 50; i++) {
+            if (j > 0) {
+                addch('#');
+                j = j - 2;
+            } else {
+                addch(' ');
+            }
+        }
+        addch(']');
+        attron(COLOR_PAIR(1U));
+        printw( (" 1 tile = " + getScaleString(zoomLevel) + "m").c_str());
+
         addch('\n');
         attron(COLOR_PAIR(1U));
-        printw(("Biome health " + std::to_string(forestHealth)).c_str());
+        printw("s - stats  |  g - grow trees  |  q - quit");
 
-        getch();
-        forestHealth++;
-        if (forestHealth > 100) {
-            forestHealth = 0;
+        char c = getch();
+        if (c == 's' || c == 'S') {
+            drawStatsScreen();
+        } else if (c == 'g' || c == 'G') {
+
+        } else if (c == 'q' || c == 'Q') {
+            return;
         }
     }
 
@@ -349,7 +431,11 @@ bool display::mainMenu()
     if (getDir(this->savePath, files) != 0) {
         printw("Press any key to continue, or ^C to exit");
         std::cerr << "Press any key to continue, or ^C to exit" << std::endl;
-        getch();
+        int i = 0;
+        do {
+            i = getch();
+        } while (i == -1);
+        //std::cerr << "Pressed a button " << i;
         move(0, 0);
         clrtobot();
     }
@@ -385,7 +471,8 @@ bool display::mainMenu()
         int c = getch();
 
         if (c == ERR) {
-            break;
+            // ignore, but redraw menu
+            return false;
         } else if (newGame && (c == 'n' || c == 'N')) {
             // newgame...
             move(0, 0);
@@ -424,7 +511,6 @@ bool display::mainMenu()
             }
         }
     }
-    exit(0);
     return false;
 }
 
@@ -617,19 +703,38 @@ std::string display::getForestName()
     return currentName;
 }
 
+void display::signalReset()
+{
+    while (true) {
+        std::cerr << "Resetting signal" << std::endl;
+        last_signal = 0;
+        sleep(2);
+    }
+}
 
 
 void display::sigabrtHandler(int sig)
 {
+    if (sig == SIGINT && last_signal != SIGINT) {
+        last_signal = sig;
+        move (0, 0);
+        clrtobot();
+        attron(COLOR_PAIR(9U));
+        printw("Are you sure you want to exit Biome?\nAll currently growing trees will be lost.\nPress ctrl+c twice rapidly to confirm.");
+        getch();
+        attron(COLOR_PAIR(1U));
+    } else if (sig == SIGINT && last_signal == SIGINT) {
+        std::cerr << "Exiting Biome because ctrl c pressed twice" << std::endl;
+        endwin();
+        exit(sig);
+    }
     if (sig == SIGKILL || sig == SIGSEGV || sig == SIGABRT) {
         endwin();
-        return;
+        // Save data here.
+        exit(sig);
     } else if (sig == SIGTSTP) {
-        std::cout << "Biome paused. Resume with the \"fg\" command." << std::endl;
-        endwin();
-        return;
+        sigabrtHandler(SIGINT);
     }
-
 }
 
 

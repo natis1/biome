@@ -32,6 +32,7 @@ namespace forest
         std::string name;
         std::string plantName;
         std::string insectName;
+        double insectQuantityModifier;
         short uninhabitedColorPair[6];
         short inhabitedColorPair[6];
         std::vector<int> uninhabitedSymbols;
@@ -41,22 +42,22 @@ namespace forest
     const biome biomes[] {
         // Uninhabited- Water which is muddy blue on brown. Inhabited- Moss which is very green on brown.
         // Uninhabited is water. ~ . - . Inhabited is moss: m, M
-        {"Swamp", "Moss", "Woodlice", {300, 300, 500, 500, 300, 0}, {200, 850, 75, 400, 300, 0}, {'~', '.', '-'}, {'m', 'M'}},
+        {"Swamp", "Moss", "Woodlice", 2.0 , {300, 300, 500, 500, 300, 0}, {200, 850, 75, 400, 300, 0}, {'~', '.', '-'}, {'m', 'M'}},
         // Uninhabited is gray rocks on light brown background. Inhabited is deep green on dark brown.
         // Uninhabited is mostly empty with occasional rocks. Inhabited is '^', 't', 'Y'
-        {"Mountain", "Cycads", "Wasps", {500, 500, 500, 850, 850, 500}, {100, 500, 100, 250, 250, 0}, {' ', ' ', ' ', ' ', ' ', 'o'}, {'^', 't', 'Y'}},
+        {"Mountain", "Cycads", "Wasps", 1.0 , {500, 500, 500, 850, 850, 500}, {100, 500, 100, 250, 250, 0}, {' ', ' ', ' ', ' ', ' ', 'o'}, {'^', 't', 'Y'}},
         // Uninhabited is yellow sand: '.', '`', ',', '*', ''' on grey background (mostly to not hurt people's eyes).
         // Inhabited is light green cacti: 'Y', 'I', 'V', '|' on darker grey background.
-        {"Desert", "Cacti", "Beetles", {850, 850, 0, 500, 500, 500}, {500, 1000, 500, 300, 300, 300}, {'.', '`', ',', '*', '\''}, {'Y', 'I', 'V', '|'}},
+        {"Desert", "Cacti", "Beetles", 1.5 , {850, 850, 0, 500, 500, 500}, {500, 1000, 500, 300, 300, 300}, {'.', '`', ',', '*', '\''}, {'Y', 'I', 'V', '|'}},
         // Uninhabited is orange sand: '.', '`', ',', '*', ''' on grey background (mostly to not hurt people's eyes).
         // Inhabited is big dark green trees: 'T', '|', 'I' on dark greenish background.
-        {"Chaparral", "Sequoia", "Ants", {900, 550, 0, 500, 500, 500}, {100, 500, 0, 0, 100, 0}, {'.', '`', ',', '*', '\''}, {'T', '|', 'I'}},
+        {"Chaparral", "Sequoia", "Ants", 8.0 , {900, 550, 0, 500, 500, 500}, {100, 500, 0, 0, 100, 0}, {'.', '`', ',', '*', '\''}, {'T', '|', 'I'}},
         // Uninhabited is very brown trees: 't', 'I', '|', '^', 'Y' on dark greenish background
         // Inhabited is orange orchids: 'S', 'p', 'R', 'Q', 'g', 'J', 'U', 'b' on dark greenish background
-        {"Jungle", "Orchids", "Bees", {1, 2, 3, 0, 100, 0}, {1, 2, 3, 0, 100, 0}, {'t', 'I', '|', '^', 'Y'}, {'S', 'p', 'R', 'Q', 'g', 'J', 'U', 'b'}},
+        {"Jungle", "Orchids", "Bees", 2.0 , {1, 2, 3, 0, 100, 0}, {1, 2, 3, 0, 100, 0}, {'t', 'I', '|', '^', 'Y'}, {'S', 'p', 'R', 'Q', 'g', 'J', 'U', 'b'}},
         // Uninhabited is light blue/cyan snow: '.', '`', ',', '*', ''' on dark blue background (mostly to not hurt people's eyes).
         // Inhabited is vivid green trees: 'T', 't', 'I', 'Y', '^' on dark greenish background
-        {"Taiga", "Conifers", "Moths", {600, 850, 850, 100, 100, 200}, {100, 900, 0, 0, 100, 0}, {'.', '`', ',', '*', '\''}, {'T', 't', 'I', 'Y', '^'}}
+        {"Taiga", "Conifers", "Moths", 1.0 , {600, 850, 850, 100, 100, 200}, {100, 900, 0, 0, 100, 0}, {'.', '`', ',', '*', '\''}, {'T', 't', 'I', 'Y', '^'}}
     };
 
 

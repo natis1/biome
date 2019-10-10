@@ -7,7 +7,8 @@ file(GLOB BIOME_SOURCES "${CMAKE_SOURCE_DIR}/src/*.cpp" "${CMAKE_SOURCE_DIR}/src
 add_executable(biome "${BIOME_SOURCES}")
 
 find_package(Curses REQUIRED)
-target_link_libraries(biome "${CURSES_LIBRARIES}")
+find_package(Threads REQUIRED)
+target_link_libraries(biome "${CURSES_LIBRARIES}" "${CMAKE_THREAD_LIBS_INIT}")
 message("Curses Libraries are ${CURSES_LIBRARIES}.")
 
 
