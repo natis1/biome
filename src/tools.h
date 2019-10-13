@@ -19,6 +19,8 @@
 #pragma once
 #define UNSET_INTVAL -9969420
 #define UNSET_DOUBLEVAL -9969.420
+#define DATATYPE_SPTR 6
+#define DATATYPE_FIXEDSIZE -10
 
 #include <array>
 #include <tuple>
@@ -47,6 +49,7 @@ namespace pseudojson {
         std::vector<std::string> sptr;
         long boolSetState = UNSET_INTVAL;
         bool boolSetBool;
+        long dataType = DATATYPE_FIXEDSIZE;
     };
 
     struct Value {
@@ -100,6 +103,7 @@ namespace pseudojson {
 
         Value& operator=(std::vector<std::string> value) {
             data.sptr = value;
+            data.dataType = DATATYPE_SPTR;
             return *this;
         }
 

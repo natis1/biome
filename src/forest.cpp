@@ -23,6 +23,16 @@
 
 using namespace forest;
 
+struct optionsFile * forest::newOptions(optionsFile* o)
+{
+    o->optionsVersion = OPTIONS_VERSION;
+    o->blockInternet = 0;
+    o->blockWebsites = 0;
+    o->idealHoursPerWeek = 7;
+    return o;
+}
+
+
 struct saveFile* forest::newForest(saveFile *s, long biome = 0, std::string name = "invalid")
 {
     s->biomeType = biome;

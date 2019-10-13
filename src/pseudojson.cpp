@@ -1,4 +1,4 @@
-/*
+    /*
  * Biome, A simple ncurses productivity program, made while procrastinating.
  * Copyright (C) 2019  Eli Stone
  *
@@ -53,7 +53,7 @@ std::string pseudojson::getValue(const pseudojson::ValueData* v)
         } else {
             val = "FALSE";
         }
-    } else if (v->sptr.size() > 0) {
+    } else if (v->dataType == DATATYPE_SPTR) {
         prefix = "S_ARRAY ";
         for (unsigned int i = 0; i < v->sptr.size(); i++) {
             if (i != 0) {
@@ -107,6 +107,10 @@ std::pair<std::string, pseudojson::Value> pseudojson::stringToValue(std::string 
             }
             break;
         case 'S': {
+            val.data.dataType = DATATYPE_SPTR;
+            if (x.at(1).size() <= 8) {
+                break;
+            }
             x.at(1).erase(0, 8);
             std::vector<std::string> a = split(x.at(1), ',');
             for (unsigned int i = 0; i < a.size(); i++)

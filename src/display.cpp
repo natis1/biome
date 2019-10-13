@@ -86,6 +86,7 @@ display::display()
     while (!mm) {
         mm = mainMenu();
     }
+    getOptionsFile(biomefolder);
     drawForest();
     endwin();
 /*
@@ -246,9 +247,32 @@ std::string display::getScaleString(long scale)
 
 std::string display::getCurrentDayOfWeek(int daysOffset)
 {
-    auto now = std::chrono::system_clock::now();
-
-
+    std::time_t t = std::time(0);
+    std::tm timeIn = *std::localtime(&t);
+    // Jan 1st, 2000.. This day is a Monday.
+    struct std::tm startingTime = {0, 0, 0, 7, 1, 100};
+    std::time_t startingTimeT = std::mktime(&startingTime);
+    std::time_t timeInT = std::mktime(&timeIn);
+    
+    long diffTime = std::difftime(timeInT, startingTimeT) / (60 * 60 * 24);
+    switch ( (diffTime + daysOffset) % 7) {
+        case 0:
+            return "Mon";
+        case 1:
+            return "Tue";
+        case 2:
+            return "Wed";
+        case 3:
+            return "Thr";
+        case 4:
+            return "Fri";
+        case 5:
+            return "Sat";
+        case 6:
+            return "Sun";
+        default:
+            return "???";
+    }
 }
 
 
@@ -256,31 +280,63 @@ std::string display::getCurrentDayOfWeek(int daysOffset)
 
 void display::drawStatsScreen()
 {
-    // I dunno the actual one. This is my best layman's guess.
-    const long healthyBugTreeRatio = 5000;
-    double fhLevel = (forestHealth > 0) ? (forestHealth / 100.0) : 0.005;
-    long actualInsectCount = (long) (sfile.trees * healthyBugTreeRatio * fhLevel * forest::biomes[sfile.biomeType].insectQuantityModifier);
-    long uniqueInsectSpecies = std::pow(sfile.trees, 0.5);
-    move(1, 0);
-    printw("Biome type: \n");
-
-    printw(("Number of " + forest::biomes[sfile.biomeType].plantName + " " + std::to_string(sfile.trees) + "\n").c_str());
-    printw(("Unique " + forest::biomes[sfile.biomeType].insectNameSingular + " species " + std::to_string(uniqueInsectSpecies) + "\n" ).c_str());
-    printw(("Number of " + forest::biomes[sfile.biomeType].insectName + std::to_string(actualInsectCount) + "\n" ).c_str());
-
-    //printw("Last week runtimes :")
-
+    move(0, 0);
+    clrtobot();
+    while (true) {
+        // I dunno the actual one. This is my best layman's guess.
+        const long healthyBugTreeRatio = 5000;
+        double fhLevel = (forestHealth > 0) ? (forestHealth / 100.0) : 0.005;
+        long actualInsectCount = (long) (sfile.trees * healthyBugTreeRatio * fhLevel * forest::biomes[sfile.biomeType].insectQuantityModifier);
+        long uniqueInsectSpecies = std::pow(sfile.trees, 0.5);
+        move(1, 0);
+        printw(("Biome type: " + forest::biomes[sfile.biomeType].name + "\n").c_str());
+        
+        printw(("Number of " + forest::biomes[sfile.biomeType].plantName + " : " + std::to_string(sfile.trees) + "\n").c_str());
+        printw(("Unique " + forest::biomes[sfile.biomeType].insectNameSingular + " species : " + std::to_string(uniqueInsectSpecies) + "\n" ).c_str());
+        printw(("Number of " + forest::biomes[sfile.biomeType].insectName + " : " + std::to_string(actualInsectCount) + "\n" ).c_str());
+        
+        printw("Last week runtimes :\n");
+        for (int i = 0; i < 7; i++) {
+            printw(getCurrentDayOfWeek(0 - i).c_str());
+            printw(" : ");
+            if (sfile.weeklyRuntimes[i] * 7.0 > ofile.idealHoursPerWeek) {
+                attron(COLOR_PAIR(7U));
+            } else {
+                attron(COLOR_PAIR(1U));
+            }
+            printw(std::to_string(sfile.weeklyRuntimes[i]).c_str());
+            attron(COLOR_PAIR(1U));
+            printw("\n");
+        }
+        printw("\n\n\n");
+        printw("B - Return to main menu.");
+        int c = getch();
+        if (c == 'b' || c == 'B') {
+            return;
+        }
+    }
 }
 
 
 
 void display::drawForest()
 {
-    forestHealth = 0;
     nodelay(stdscr, FALSE);
     //std::cerr << "Forest seed is " << sfile.biomeSeed << std::endl;
     //getch();
     while (true) {
+        forestHealth = 0;
+        double totalHours = 0;
+        for (int i = 0; i < 7; i++) {
+            totalHours += sfile.weeklyRuntimes[i];
+        }
+        if (ofile.idealHoursPerWeek > 0) {
+            forestHealth = 100 * (totalHours / ofile.idealHoursPerWeek);
+        }
+        if (forestHealth > 100) {
+            forestHealth = 100;
+        }
+        
         std::mt19937 rng(sfile.biomeSeed);
         std::uniform_int_distribution<int> colorRn(0, 5);
         std::uniform_int_distribution<int> inhabitedRn(0, forest::biomes[sfile.biomeType].inhabitedSymbols.size() - 1);
@@ -391,6 +447,30 @@ void display::drawForest()
 
 }
 
+void display::getOptionsFile(std::string dir)
+{
+    DIR *dp;
+    struct dirent *dirp;
+    if((dp  = opendir(dir.c_str())) == NULL) {
+        std::cout << "Error(" << errno << ") opening " << dir << std::endl;
+        return;
+    }
+    bool foundFile = false;
+    
+    while ((dirp = readdir(dp)) != NULL) {
+        std::string s = dirp->d_name;
+        if (s.find("biome.conf") == s.npos)
+            continue;
+        foundFile = true;
+        ofile = fromJson<forest::optionsFile>(pseudojson::fileToPseudoJson(this->savePath + "biome.conf"));
+    }
+    if (!foundFile) {
+        forest::newOptions(&ofile);
+        pseudojson::writeToFile(toJson(ofile), this->savePath + "biome.conf");
+    }
+    closedir(dp);
+    
+}
 
 
 
@@ -721,7 +801,6 @@ std::string display::getForestName()
 void display::signalReset()
 {
     while (true) {
-        std::cerr << "Resetting signal" << std::endl;
         last_signal = 0;
         sleep(2);
     }

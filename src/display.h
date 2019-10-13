@@ -53,6 +53,7 @@ public:
 
 private:
     std::string getForestName();
+    void getOptionsFile(std::string dir);
     void forestNameHelper(bool state);
     void biomeTypeHelper(int biome);
     int getBiomeType();

@@ -79,7 +79,6 @@ namespace forest
         bool operator==(const saveFile& rhs) const {
             assert (weeklyRundifficulties.size() == 7 && weeklyRuntimes.size() == 7);
 
-
             return
             std::tie(dataVersion, biomeType, trees, productiveSeconds, biomeSeed, name, lastRunTime, dailyStreak, weeklyRuntimes[0], weeklyRuntimes[1], weeklyRuntimes[2], weeklyRuntimes[3], weeklyRuntimes[4], weeklyRuntimes[5], weeklyRuntimes[6], weeklyRundifficulties[0], weeklyRundifficulties[1], weeklyRundifficulties[2], weeklyRundifficulties[3], weeklyRundifficulties[4], weeklyRundifficulties[5], weeklyRundifficulties[6]) ==
             std::tie(rhs.dataVersion, rhs.biomeType, rhs.trees, rhs.productiveSeconds, rhs.biomeSeed, rhs.name, rhs.lastRunTime, rhs.dailyStreak, rhs.weeklyRuntimes[0], rhs.weeklyRuntimes[1], rhs.weeklyRuntimes[2], rhs.weeklyRuntimes[3], rhs.weeklyRuntimes[4], rhs.weeklyRuntimes[5], rhs.weeklyRuntimes[6], rhs.weeklyRundifficulties[0], rhs.weeklyRundifficulties[1], rhs.weeklyRundifficulties[2], rhs.weeklyRundifficulties[3], rhs.weeklyRundifficulties[4], rhs.weeklyRundifficulties[5], rhs.weeklyRundifficulties[6]);
@@ -116,12 +115,24 @@ namespace forest
 
     struct optionsFile {
         long optionsVersion;
-        long blockWebsites;
+        bool blockWebsites;
         std::vector<std::string> sitesBlocked;
-        long blockInternet;
+        bool blockInternet;
+        double idealHoursPerWeek;
+        
+        constexpr static auto properties = std::make_tuple
+        (
+            property(&optionsFile::optionsVersion, "Version Number"),
+         property(&optionsFile::blockWebsites, "Block Websites?"),
+         property(&optionsFile::sitesBlocked, "Sites Blocked"),
+         property(&optionsFile::blockInternet, "Block Internet?"),
+         property(&optionsFile::idealHoursPerWeek, "Goal Hours Per Week")
+        );
+        
 
     };
 
+    struct optionsFile* newOptions(optionsFile *o);
     struct saveFile* newForest(saveFile *s, long biome, std::string name);
     struct saveFile* updateForest(saveFile *s);
 }
