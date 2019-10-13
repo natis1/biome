@@ -29,6 +29,7 @@
 #include <algorithm>
 #include <unistd.h>
 #include <thread>
+#include <cstdint>
 
 using namespace display_consts;
 
@@ -243,17 +244,31 @@ std::string display::getScaleString(long scale)
     }
 }
 
+std::string display::getCurrentDayOfWeek(int daysOffset)
+{
+    auto now = std::chrono::system_clock::now();
+
+
+}
+
+
 
 
 void display::drawStatsScreen()
 {
     // I dunno the actual one. This is my best layman's guess.
     const long healthyBugTreeRatio = 5000;
-    long actualInsectCount = (long) (healthyBugTreeRatio * (forestHealth / 100.0) * forest::biomes[sfile.biomeType].insectQuantityModifier);
-    long uniqueInsectSpecies = std::pow(sfile.trees, 0.02);
+    double fhLevel = (forestHealth > 0) ? (forestHealth / 100.0) : 0.005;
+    long actualInsectCount = (long) (sfile.trees * healthyBugTreeRatio * fhLevel * forest::biomes[sfile.biomeType].insectQuantityModifier);
+    long uniqueInsectSpecies = std::pow(sfile.trees, 0.5);
     move(1, 0);
     printw("Biome type: \n");
-    printw("Unique insect species ");
+
+    printw(("Number of " + forest::biomes[sfile.biomeType].plantName + " " + std::to_string(sfile.trees) + "\n").c_str());
+    printw(("Unique " + forest::biomes[sfile.biomeType].insectNameSingular + " species " + std::to_string(uniqueInsectSpecies) + "\n" ).c_str());
+    printw(("Number of " + forest::biomes[sfile.biomeType].insectName + std::to_string(actualInsectCount) + "\n" ).c_str());
+
+    //printw("Last week runtimes :")
 
 }
 

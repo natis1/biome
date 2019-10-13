@@ -62,6 +62,7 @@ private:
     long getZoomLevel();
     static std::vector<bool> getPloppedTiles(long numPlopped, long int seed, int x, int y, double stdevPerX, double stdevPerY);
     static std::string getScaleString(long scale);
+    static std::string getCurrentDayOfWeek(int daysOffset);
     std::vector<int> forestOpacity();
     std::vector<int> adjacentTileOpacity();
     long forestHealth;
