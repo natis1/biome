@@ -18,6 +18,7 @@
 
 #include <curses.h>
 #include "display.h"
+#include "ctimer.h"
 #include <signal.h>
 #include <random>
 #include <sstream>
@@ -35,7 +36,7 @@ using namespace display_consts;
 
 // yuck
 static volatile sig_atomic_t last_signal = 0;
-static volatile bool handing_signals = false;
+static volatile bool handing_signals = true;
 
 display::display()
 {
@@ -86,9 +87,13 @@ display::display()
     while (!mm) {
         mm = mainMenu();
     }
+    lastRundateRepair();
     getOptionsFile(biomefolder);
     drawForest();
+    pseudojson::writeToFile(toJson(sfile), this->savePath + sfile.name + ".biome");
     endwin();
+    handing_signals = false;
+    t1.join();
 /*
     if (std::ifstream(biomefolder + "forest")) {
         sfile = fromJson<forest::saveFile>(pseudojson::fileToPseudoJson(biomefolder + "forest"));
@@ -104,6 +109,7 @@ display::display()
 
     nodelay(stdscr, true); */
 }
+
 
 long display::getZoomLevel()
 {
@@ -253,7 +259,7 @@ std::string display::getCurrentDayOfWeek(int daysOffset)
     struct std::tm startingTime = {0, 0, 0, 7, 1, 100};
     std::time_t startingTimeT = std::mktime(&startingTime);
     std::time_t timeInT = std::mktime(&timeIn);
-    
+
     long diffTime = std::difftime(timeInT, startingTimeT) / (60 * 60 * 24);
     switch ( (diffTime + daysOffset) % 7) {
         case 0:
@@ -275,6 +281,62 @@ std::string display::getCurrentDayOfWeek(int daysOffset)
     }
 }
 
+void display::lastRundateRepair()
+{
+    std::time_t lastRun = sfile.lastRunTime;
+    std::tm lastRunLocal = *std::localtime(&lastRun);
+    std::time_t currentTime = std::time(0);
+    std::tm currentTimeTM = *std::localtime(&currentTime);
+    // Reset to end of day.
+    lastRunLocal.tm_hour = 0;
+    lastRunLocal.tm_sec = 0;
+    lastRunLocal.tm_min = 0;
+
+    std::time_t localTimeT = std::mktime(&currentTimeTM);
+    std::time_t lastRunLocalTimeT = std::mktime(&lastRunLocal);
+    long diffTime = std::difftime(localTimeT, lastRunLocalTimeT) / (60 * 60 * 24);
+
+    //std::cerr << localTimeT << " is current time " << lastRunLocalTimeT << " is last run time " << std::endl;
+    //std::cerr << "Number of days since last run is " << diffTime << std::endl;
+    //getch();
+    if (diffTime < 0) {
+        std::cerr << "Did the time change? Your last run seemed to happen " << -diffTime + 1 << " days in the future." << std::endl;
+        getch();
+        move(0, 0);
+        clrtobot();
+        diffTime = 0;
+    } else if (diffTime < 7) {
+        if (diffTime > 1) {
+            // oof
+            sfile.dailyStreak = 0;
+        } else if (sfile.weeklyRuntimes[0] > ofile.idealHoursPerWeek / 7.0) {
+            // Nice!
+            sfile.dailyStreak++;
+        }
+        // We need to shift our weekly runtimes vector by diffTime.
+        std::vector<double> newTimes;
+        for (int i = 0; i < 7; i++) {
+            if (i - diffTime < 0) {
+                newTimes.push_back(0.0);
+            } else {
+                newTimes.push_back(sfile.weeklyRuntimes[i - diffTime]);
+            }
+        }
+        for (int i = 0; i < 7; i++) {
+            sfile.weeklyRuntimes[i] = newTimes[i];
+        }
+
+    } else {
+        sfile.dailyStreak = 0;
+        for (int i = 0; i < 7; i++) {
+            sfile.weeklyRuntimes[i] = 0.0;
+        }
+    }
+    sfile.lastRunTime = currentTime;
+    pseudojson::writeToFile(toJson(sfile), this->savePath + sfile.name + ".biome");
+}
+
+
 
 
 
@@ -290,11 +352,11 @@ void display::drawStatsScreen()
         long uniqueInsectSpecies = std::pow(sfile.trees, 0.5);
         move(1, 0);
         printw(("Biome type: " + forest::biomes[sfile.biomeType].name + "\n").c_str());
-        
+
         printw(("Number of " + forest::biomes[sfile.biomeType].plantName + " : " + std::to_string(sfile.trees) + "\n").c_str());
         printw(("Unique " + forest::biomes[sfile.biomeType].insectNameSingular + " species : " + std::to_string(uniqueInsectSpecies) + "\n" ).c_str());
         printw(("Number of " + forest::biomes[sfile.biomeType].insectName + " : " + std::to_string(actualInsectCount) + "\n" ).c_str());
-        
+
         printw("Last week runtimes :\n");
         for (int i = 0; i < 7; i++) {
             printw(getCurrentDayOfWeek(0 - i).c_str());
@@ -317,6 +379,133 @@ void display::drawStatsScreen()
     }
 }
 
+long display::getTimerImpact(long timeLength)
+{
+    const double maxTreesPerSecond = 0.01666667;
+    const double treesPerSecond = 0.00333333334;
+    const double treeFactor = 1.2;
+    long maxTrees = (long) (maxTreesPerSecond * timeLength);
+    long actualTrees = (long) (std::pow(treesPerSecond * timeLength, treeFactor));
+    if (actualTrees > maxTrees) {
+        return maxTrees;
+    }
+    return actualTrees;
+}
+
+
+long display::getTimerLength()
+{
+    move(0, 0);
+    clrtobot();
+    std::string timeStr;
+    while (true) {
+        move(0, 0);
+        printw(("Grow " + forest::biomes[sfile.biomeType].plantName + "!").c_str());
+        move(4, 0);
+        printw("To grow plants, enter timer length in the format: HH:MM:SS");
+        move(5, timeStr.size());
+
+        int c = getch();
+        if (c == ERR) {
+            return -1;
+        } if (c == KEY_RESIZE) {
+            continue;
+        } else if ( (c == KEY_ENTER || c == 10) && timeStr.size() > 0) {
+            long netTime = 0;
+
+            try {
+            std::vector<std::string> times = pseudojson::split(timeStr, ':');
+            int j = 0;
+            for (int i = times.size() - 1; i >= 0; i--) {
+                j++;
+                switch (j) {
+                    case 1:
+                        netTime += std::stol(times[i]);
+                        break;
+                    case 2:
+                        netTime += 60 * std::stol(times[i]);
+                        break;
+                    case 3:
+                        netTime += 3600 * std::stol(times[i]);
+                        break;
+                    case 4:
+                        netTime += 86400 * std::stol(times[i]);
+                        break;
+                    case 5:
+                        netTime += 31557600 * std::stol(times[i]);
+                        break;
+                    default:
+                        netTime = -1;
+                        break;
+                }
+            }
+            } catch (std::invalid_argument) {
+                move(0, 0);
+                clrtobot();
+                printw(("Invalid time entered " + timeStr).c_str());
+                timeStr = "";
+                getch();
+                move(0, 0);
+                clrtoeol();
+                return -1;
+            }
+            move(0, 0);
+            clrtobot();
+            printw("Are you sure you want to create a timer for: \n");
+            long ntNew = netTime;
+            if (ntNew >= 31557600) {
+                printw((std::to_string(ntNew / 31557600) + " years\n").c_str());
+                ntNew = ntNew % 31557600;
+            }
+            if (ntNew >= 86400) {
+                printw((std::to_string( ntNew / 86400) + " days\n").c_str());
+                ntNew = ntNew % 86400;
+            }
+            if (ntNew >= 3600) {
+                printw((std::to_string( ntNew / 3600) + " hours\n").c_str());
+                ntNew = ntNew % 3600;
+            }
+            if (ntNew >= 60) {
+                printw((std::to_string( ntNew / 60) + " minutes and\n").c_str());
+                ntNew = ntNew % 60;
+            }
+            printw((std::to_string( ntNew ) + " seconds?").c_str());
+
+            if (forestHealth < 100 && ofile.idealHoursPerWeek > 0.0) {
+                long amtHealed = (long) ((100.0 * (netTime / 3600.0)) / ofile.idealHoursPerWeek);
+                printw("\n\n");
+                if (amtHealed + forestHealth > 100) {
+                    amtHealed = 100 - forestHealth;
+                }
+                printw(("This will heal your " + forest::biomes[sfile.biomeType].name + " by about " + std::to_string(amtHealed) + "%\n").c_str());
+            }
+            printw(("This will grow " + std::to_string(getTimerImpact(netTime)) + " " + forest::biomes[sfile.biomeType].plantName + "\n").c_str());
+            printw("[y/N]");
+            int answer = getch();
+            if (answer == 'y' || answer == 'Y') {
+                return netTime;
+            } else {
+                return -1;
+            }
+        } else if (c == 8 || c == KEY_BACKSPACE || c == 127) {
+            if (!timeStr.empty()) {
+                timeStr = timeStr.substr(0, timeStr.size() - 1);
+            }
+        } else if (c == '/' || c == '\\' || c == '.') {
+            // Ignore input to sanitize for the system.
+        } else {
+            timeStr = timeStr + static_cast<char>(c);
+        }
+
+        move(5, 0);
+        clrtoeol();
+        move(5, 0);
+        printw(timeStr.c_str());
+
+
+    }
+}
+
 
 
 void display::drawForest()
@@ -336,7 +525,7 @@ void display::drawForest()
         if (forestHealth > 100) {
             forestHealth = 100;
         }
-        
+
         std::mt19937 rng(sfile.biomeSeed);
         std::uniform_int_distribution<int> colorRn(0, 5);
         std::uniform_int_distribution<int> inhabitedRn(0, forest::biomes[sfile.biomeType].inhabitedSymbols.size() - 1);
@@ -433,12 +622,26 @@ void display::drawForest()
 
         addch('\n');
         attron(COLOR_PAIR(1U));
-        printw("s - stats  |  g - grow trees  |  q - quit");
+        printw("s - stats  |  g - grow  |  q - quit");
 
         char c = getch();
         if (c == 's' || c == 'S') {
             drawStatsScreen();
         } else if (c == 'g' || c == 'G') {
+            long runTime = getTimerLength();
+            if (runTime > 0) {
+                ctimer *ctim = new ctimer();
+                ctim->initConfigData();
+                ctim->initColors();
+                bool didRun = ctim->startDisplay("Growing " + forest::biomes[sfile.biomeType].plantName, runTime);
+                if (didRun) {
+                    sfile.trees += getTimerImpact(runTime);
+                    sfile.productiveSeconds += runTime;
+                    sfile.weeklyRuntimes[0] += (double) (runTime / 3600.0);
+                    lastRundateRepair();
+                }
+            }
+
 
         } else if (c == 'q' || c == 'Q') {
             return;
@@ -456,7 +659,7 @@ void display::getOptionsFile(std::string dir)
         return;
     }
     bool foundFile = false;
-    
+
     while ((dirp = readdir(dp)) != NULL) {
         std::string s = dirp->d_name;
         if (s.find("biome.conf") == s.npos)
@@ -469,7 +672,7 @@ void display::getOptionsFile(std::string dir)
         pseudojson::writeToFile(toJson(ofile), this->savePath + "biome.conf");
     }
     closedir(dp);
-    
+
 }
 
 
@@ -800,9 +1003,9 @@ std::string display::getForestName()
 
 void display::signalReset()
 {
-    while (true) {
+    while (handing_signals) {
         last_signal = 0;
-        sleep(2);
+        usleep(400000);
     }
 }
 

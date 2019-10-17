@@ -34,8 +34,8 @@ void ctimer::initConfigData()
     if (display::getDir(saveFolder, saveFile) != 0) {
         mkdir(saveFolder.c_str(), 0755);
     }
-    std::cout << "Save file size is " << saveFile.size() << std::endl << "And the timer length is " << timeTotal;
-    
+    //std::cout << "Save file size is " << saveFile.size() << std::endl << "And the timer length is " << timeTotal;
+
     bool hasFile = (saveFile.size() < 1);
     if (hasFile) {
         hasFile = false;
@@ -45,16 +45,16 @@ void ctimer::initConfigData()
                 break;
             }
         }
-        
+
     }
     if (!hasFile) {
         config = {1000, 1000, 0, 0, 0, 0, 200, 800, 200, 400, 0, 0, 1000, 1000, 1000, 0, 0, 0};
         pseudojson::Value configFile = toJson(config);
         pseudojson::writeToFile(configFile, saveFolder + "timer.conf");
     }
-    
+
     config = fromJson<ctimer::configData>(pseudojson::fileToPseudoJson(saveFolder + "timer.conf"));
-    
+
     colors[0] = config.text_foreground_r;
     colors[1] = config.text_foreground_g;
     colors[2] = config.text_foreground_b;
@@ -73,38 +73,40 @@ void ctimer::initConfigData()
     colors[15] = config.done_background_r;
     colors[16] = config.done_background_g;
     colors[17] = config.done_background_b;
-    
+
 }
 
 
 void ctimer::initColors()
 {
     // The colors of the text
-    init_color(69, colors[0], colors[1], colors[2]);
-    init_color(70, colors[3], colors[4], colors[5]);
-    
+    init_color(100, colors[0], colors[1], colors[2]);
+    init_color(101, colors[3], colors[4], colors[5]);
+
     // Colors of the partially filled bar
-    init_color(71, colors[6], colors[7], colors[8]);
-    init_color(72, colors[9], colors[10], colors[11]);
-    
+    init_color(102, colors[6], colors[7], colors[8]);
+    init_color(103, colors[9], colors[10], colors[11]);
+
     // Colors of the full bar
-    init_color(73, colors[12], colors[13], colors[14]);
-    init_color(74, colors[15], colors[16], colors[17]);
-    
-    init_pair(9, 69, 70);
-    init_pair(10, 71, 72);
-    
+    init_color(104, colors[12], colors[13], colors[14]);
+    init_color(105, colors[15], colors[16], colors[17]);
+
+    init_pair(40, 100, 101);
+    init_pair(41, 102, 103);
+
     // Color pair 4 and 5 is inverted because ncurses chars lack the full bar character. so instead we use spaces but anti-colored.
-    init_pair(11, 74, 73);
-    init_pair(12, 72, 71);    
-    
+    init_pair(42, 104, 105);
+    init_pair(43, 103, 102);
+
 }
 
-void ctimer::startDisplay(std::string timerName, double timeTotal)
+bool ctimer::startDisplay(std::string timerName, double timeTotal)
 {
     this->timerName = timerName;
     this->timeTotal = timeTotal;
-    timerLoop();
+    curs_set(0);
+    return timerLoop();
+    curs_set(1);
 }
 
 
@@ -130,7 +132,7 @@ std::string ctimer::formatTime(double time)
     time = std::fmod(time, 3600.0);
     int minutes = time / 60;
     time = std::fmod(time, 60.0);
-    
+
     if (days > 0) {
         tOut += std::to_string(days) + ":";
     }
@@ -147,104 +149,113 @@ std::string ctimer::formatTime(double time)
     if (time < 10) {
         tOut += "0";
     }
-    
+
     // Create an output string stream
     std::ostringstream streamObj3;
     streamObj3 << std::fixed;
     streamObj3 << std::setprecision(2);
     streamObj3 << time;
     tOut += streamObj3.str();
-    
+
     return tOut;
 }
 
 
-void ctimer::timerLoop()
+bool ctimer::timerLoop()
 {
+    nodelay(stdscr, TRUE);
     auto start = std::chrono::system_clock::now();
     std::string endTime = formatTime(timeTotal);
     while (true) {
+        int c = getch();
+        // escape key
+        if (c == 27 || c == 'q' || c == 'Q') {
+            nodelay(stdscr, FALSE);
+            attron(COLOR_PAIR(8U));
+            move(0, 0);
+            printw(("Are you sure you want to exit now?\n" + std::to_string(display::getTimerImpact((long) timeTotal)) + " trees will die!").c_str());
+            printw("\n[y/N]");
+            int j = getch();
+            nodelay(stdscr, TRUE);
+            if (j == 'y' || j == 'Y') {
+                return false;
+            }
+        }
+
         auto curTime = std::chrono::system_clock::now();
         std::chrono::duration<double> t = curTime - start;
         if (t.count() > timeTotal) {
-            return;
+            nodelay(stdscr, FALSE);
+            endTimer();
+            return true;
         } else {
             double percentageBar = t.count() / timeTotal;
             int barSize = (int) (((COLS - 2) * percentageBar) + 0.5);
-            
-            attron(COLOR_PAIR(2));
-            rectangle(LINES - 5, 0, 4, COLS - 1);
+
+            attron(COLOR_PAIR(40U));
+            rectangle(0, 0, 4, COLS - 1);
             int leftMid = (COLS / 2) - (timerName.length() / 2);
             if (leftMid > 0) {
                 move(1, leftMid);
                 printw(timerName.c_str());
             }
-            attron(COLOR_PAIR(5));
+            attron(COLOR_PAIR(43U));
             std::string bar (barSize, ' ');
             std::string barEnd (COLS - 2 - barSize, ' ');
-            move (LINES - 3, 1);
+            move (2, 1);
             printw(bar.c_str());
-            attron(COLOR_PAIR(3));
+            attron(COLOR_PAIR(41U));
             printw(barEnd.c_str());
-            move (LINES - 2, 1);
-            attron(COLOR_PAIR(2));
+            move (3, 1);
+            attron(COLOR_PAIR(40U));
             printw(formatTime(t.count()).c_str());
-            
+
             if (COLS - 1 - endTime.length() > 0) {
-                move (LINES - 2, COLS - 1 - endTime.length());
+                move (3, COLS - 1 - endTime.length());
                 printw(endTime.c_str());
             }
-            
+
             refresh();
             // meme
-            
+
         }
         usleep(100000);
         move(0, 0);
         clrtobot();
     }
+    return false;
 }
 
 void ctimer::endTimer()
 {
     std::string endTime = formatTime(timeTotal);
     while (true) {
-        
+
         int barSize = (COLS - 2);
-        
-        attron(COLOR_PAIR(2));
-        rectangle(LINES - 5, 0, 4, COLS - 1);
+
+        attron(COLOR_PAIR(40U));
+        rectangle(0, 0, 4, COLS - 1);
         int leftMid = (COLS / 2) - (timerName.length() / 2);
         if (leftMid > 0) {
             move(1, leftMid);
             printw(timerName.c_str());
         }
-        attron(COLOR_PAIR(4));
+        attron(COLOR_PAIR(43U));
         std::string bar (barSize, ' ');
-        move (LINES - 3, 1);
+        move (2, 1);
         printw(bar.c_str());
-        move (LINES - 2, 1);
-        attron(COLOR_PAIR(2));
+        move (3, 1);
+        attron(COLOR_PAIR(40U));
         printw(endTime.c_str());
-        
+
         if (COLS - 1 - endTime.length() > 0) {
-            move (LINES - 2, COLS - 1 - endTime.length());
+            move (3, COLS - 1 - endTime.length());
             printw(endTime.c_str());
         }
-        
-        refresh();
-        usleep(100000);
-        move(0, 0);
-        clrtobot();
-        
+
         int c = getch();
-        
-        if (c == KEY_ENTER || c == 10) {
-            curs_set(1);
-            endwin();
-            std::cout << "Your timer for " << timerName << " is complete!" << std::endl <<"Thank you for using cursed timer." << std::endl;
-            return;
-        }
+
+        return;
     }
 }
 

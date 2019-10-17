@@ -50,6 +50,7 @@ public:
     static void sigabrtHandler(int sig);
     static int getDir(std::string dir, std::vector<std::string> &files);
     static void signalReset();
+    static long getTimerImpact(long timeLength);
 
 private:
     std::string getForestName();
@@ -66,10 +67,12 @@ private:
     static std::string getCurrentDayOfWeek(int daysOffset);
     std::vector<int> forestOpacity();
     std::vector<int> adjacentTileOpacity();
+    long getTimerLength();
     long forestHealth;
     std::string savePath;
     forest::saveFile sfile;
     forest::optionsFile ofile;
+    void lastRundateRepair();
 
     void drawForest();
     void drawStatsScreen();

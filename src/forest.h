@@ -55,7 +55,7 @@ namespace forest
         {"Chaparral", "Sequoia", "Ant", "Ants", 8.0 , {900, 550, 0, 500, 500, 500}, {100, 500, 0, 0, 100, 0}, {'.', '`', ',', '*', '\''}, {'T', '|', 'I'}},
         // Uninhabited is very brown trees: 't', 'I', '|', '^', 'Y' on dark greenish background
         // Inhabited is orange orchids: 'S', 'p', 'R', 'Q', 'g', 'J', 'U', 'b' on dark greenish background
-        {"Jungle", "Orchids", "Bee", "Bees", 2.0 , {1, 2, 3, 0, 100, 0}, {1, 2, 3, 0, 100, 0}, {'t', 'I', '|', '^', 'Y'}, {'S', 'p', 'R', 'Q', 'g', 'J', 'U', 'b'}},
+        {"Jungle", "Orchids", "Bee", "Bees", 2.0 , {1000, 400, 0, 0, 700, 0}, {0, 500, 0, 0, 100, 0}, {'t', 'I', '|', '^', 'Y'}, {'S', 'p', 'R', 'Q', 'g', 'J', 'U', 'b'}},
         // Uninhabited is light blue/cyan snow: '.', '`', ',', '*', ''' on dark blue background (mostly to not hurt people's eyes).
         // Inhabited is vivid green trees: 'T', 't', 'I', 'Y', '^' on dark greenish background
         {"Taiga", "Conifers", "Moth", "Moths", 1.0 , {600, 850, 850, 100, 100, 200}, {100, 900, 0, 0, 100, 0}, {'.', '`', ',', '*', '\''}, {'T', 't', 'I', 'Y', '^'}}
@@ -119,7 +119,7 @@ namespace forest
         std::vector<std::string> sitesBlocked;
         bool blockInternet;
         double idealHoursPerWeek;
-        
+
         constexpr static auto properties = std::make_tuple
         (
             property(&optionsFile::optionsVersion, "Version Number"),
@@ -128,7 +128,7 @@ namespace forest
          property(&optionsFile::blockInternet, "Block Internet?"),
          property(&optionsFile::idealHoursPerWeek, "Goal Hours Per Week")
         );
-        
+
 
     };
 

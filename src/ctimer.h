@@ -74,7 +74,7 @@ public:
 
 
     int colors[18];
-    void startDisplay(std::string timerName, double timeTotal);
+    bool startDisplay(std::string timerName, double timeTotal);
     void initConfigData();
     void initColors();
     double getTimerPercentage();
@@ -82,7 +82,7 @@ private:
     double timeTotal;
     double timePassed;
     std::string timerName;
-    void timerLoop();
+    bool timerLoop();
     void endTimer();
     void rectangle(int y1, int x1, int y2, int x2);
     std::string formatTime(double time);
