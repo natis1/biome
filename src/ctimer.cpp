@@ -32,15 +32,16 @@ void ctimer::initConfigData()
     std::string saveFolder = std::getenv("HOME");
     saveFolder += display_consts::SAVE_LOCATION;
     std::vector<std::string> saveFile;
-    if (display::getDir(saveFolder, saveFile) != 0) {
+    if (display::getDir(true, saveFolder, saveFile) != 0) {
         mkdir(saveFolder.c_str(), 0755);
     }
     //std::cout << "Save file size is " << saveFile.size() << std::endl << "And the timer length is " << timeTotal;
 
-    bool hasFile = (saveFile.size() < 1);
+    bool hasFile = (saveFile.size() >= 1);
     if (hasFile) {
         hasFile = false;
         for (unsigned int i = 0; i < saveFile.size(); i++) {
+            std::cerr << saveFile.at(i) << std::endl;
             if (saveFile.at(i) == "timer.conf") {
                 hasFile = true;
                 break;
@@ -84,27 +85,27 @@ void ctimer::initColors()
         // The colors of the text
         init_color(100, colors[0], colors[1], colors[2]);
         init_color(101, colors[3], colors[4], colors[5]);
-        
+
         // Colors of the partially filled bar
         init_color(102, colors[6], colors[7], colors[8]);
         init_color(103, colors[9], colors[10], colors[11]);
-        
+
         // Colors of the full bar
         init_color(104, colors[12], colors[13], colors[14]);
         init_color(105, colors[15], colors[16], colors[17]);
-        
+
         init_pair(40, 100, 101);
         init_pair(41, 102, 103);
-        
+
         // Color pair 4 and 5 is inverted because ncurses chars lack the full bar character. so instead we use spaces but anti-colored.
         init_pair(42, 104, 105);
         init_pair(43, 103, 102);
     } else {
         // No custom colors for you sorry.
-        display::loadEightBitColor(40, forest::YELLOW, forest::BLACK);
-        display::loadEightBitColor(41, forest::GREEN, forest::RED);
-        display::loadEightBitColor(42, forest::WHITE, forest::BLACK);
-        display::loadEightBitColor(43, forest::RED, forest::GREEN);
+        display::loadEightBitColor(40, forest::YELLOW, forest::BLACK, colorMode);
+        display::loadEightBitColor(41, forest::GREEN, forest::RED, colorMode);
+        display::loadEightBitColor(42, forest::WHITE, forest::BLACK, colorMode);
+        display::loadEightBitColor(43, forest::RED, forest::GREEN, colorMode);
     }
 }
 

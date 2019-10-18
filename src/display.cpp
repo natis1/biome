@@ -93,12 +93,12 @@ display::display()
     }
     // Fix colors
     if (colorMode != 24) {
-        loadEightBitColor(4, forest::PURE_GREY, forest::BLACK);
-        loadEightBitColor(5, forest::YELLOW, forest::BLACK);
-        loadEightBitColor(6, forest::ORANGE, forest::BLACK);
-        loadEightBitColor(8, forest::CYAN, forest::BLACK);
+        loadEightBitColor(4, forest::PURE_GREY, forest::BLACK, colorMode);
+        loadEightBitColor(5, forest::YELLOW, forest::BLACK, colorMode);
+        loadEightBitColor(6, forest::ORANGE, forest::BLACK, colorMode);
+        loadEightBitColor(8, forest::CYAN, forest::BLACK, colorMode);
     }
-    
+
     lastRundateRepair();
     getOptionsFile(biomefolder);
     drawForest();
@@ -546,7 +546,7 @@ void display::drawForest()
             init_color(82, forest::biomes[sfile.biomeType].uninhabitedColorPair[0], forest::biomes[sfile.biomeType].uninhabitedColorPair[1], forest::biomes[sfile.biomeType].uninhabitedColorPair[2]);
             init_color(83, forest::biomes[sfile.biomeType].uninhabitedColorPair[3], forest::biomes[sfile.biomeType].uninhabitedColorPair[4], forest::biomes[sfile.biomeType].uninhabitedColorPair[5]);
             init_pair(15, 82, 83);
-            
+
             std::vector<int> adjColors = adjacentTileOpacity();
             for (int i = 0; i < 9; i++) {
                 init_color(90 + 2 * i, adjColors[0 + i], adjColors[9 + i], adjColors[18 + i]);
@@ -554,15 +554,15 @@ void display::drawForest()
                 init_pair(16 + i, 90 + 2 * i, 91 + 2 * i);
             }
         } else {
-            loadEightBitColor(14, forest::biomes[sfile.biomeType].colorDescriptions[0], forest::biomes[sfile.biomeType].colorDescriptions[1]);
-            loadEightBitColor(15, forest::biomes[sfile.biomeType].colorDescriptions[2], forest::biomes[sfile.biomeType].colorDescriptions[3]);
+            loadEightBitColor(14, forest::biomes[sfile.biomeType].colorDescriptions[0], forest::biomes[sfile.biomeType].colorDescriptions[1], colorMode);
+            loadEightBitColor(15, forest::biomes[sfile.biomeType].colorDescriptions[2], forest::biomes[sfile.biomeType].colorDescriptions[3], colorMode);
             for (int i = 0; i < 9; i++) {
                 if (forestHealth / 20 > 9 - i) {
                     // Load unhealthy
-                    loadEightBitColor(16 + i, forest::biomes[sfile.biomeType].colorDescriptions[0], forest::biomes[sfile.biomeType].colorDescriptions[1]);
+                    loadEightBitColor(16 + i, forest::biomes[sfile.biomeType].colorDescriptions[0], forest::biomes[sfile.biomeType].colorDescriptions[1], colorMode);
                 } else {
                     // Load healthy
-                    loadEightBitColor(16 + i, forest::biomes[sfile.biomeType].colorDescriptions[2], forest::biomes[sfile.biomeType].colorDescriptions[3]);
+                    loadEightBitColor(16 + i, forest::biomes[sfile.biomeType].colorDescriptions[2], forest::biomes[sfile.biomeType].colorDescriptions[3], colorMode);
                 }
             }
         }
@@ -643,6 +643,7 @@ void display::drawForest()
             long runTime = getTimerLength();
             if (runTime > 0) {
                 ctimer *ctim = new ctimer();
+                ctim->colorMode = colorMode;
                 ctim->initConfigData();
                 ctim->initColors();
                 bool didRun = ctim->startDisplay("Growing " + forest::biomes[sfile.biomeType].plantName, runTime);
@@ -689,7 +690,7 @@ void display::getOptionsFile(std::string dir)
 
 
 
-int display::getDir(std::string dir, std::vector<std::string> &files)
+int display::getDir(bool includeOthers, std::string dir, std::vector<std::string> &files)
 {
     DIR *dp;
     struct dirent *dirp;
@@ -699,15 +700,24 @@ int display::getDir(std::string dir, std::vector<std::string> &files)
     }
     int err = 0;
 
-    while ((dirp = readdir(dp)) != NULL) {
-        std::string s = dirp->d_name;
-        if ( strncmp(dirp->d_name, ".", 1) == 0 || s.find(".conf") != s.npos)
-            continue;
-        if (s.length() > 6 && (s.compare(s.size() - 6, 6, ".biome") == 0)) {
+    if (!includeOthers) {
+        while ((dirp = readdir(dp)) != NULL) {
+            std::string s = dirp->d_name;
+            if ( strncmp(dirp->d_name, ".", 1) == 0 || s.find(".conf") != s.npos)
+                continue;
+            if (s.length() > 6 && (s.compare(s.size() - 6, 6, ".biome") == 0)) {
+                files.push_back(std::string(dirp->d_name));
+            } else {
+                err = 420;
+                printw(("Possible biome file \"" + s + "\" does not end in .biome. Please rename it if it's a valid file.\n").c_str());
+            }
+        }
+    } else {
+        while ((dirp = readdir(dp)) != NULL) {
+            std::string s = dirp->d_name;
+            if ( strncmp(dirp->d_name, ".", 1) == 0)
+                continue;
             files.push_back(std::string(dirp->d_name));
-        } else {
-            err = 420;
-            printw(("Possible biome file \"" + s + "\" does not end in .biome. Please rename it if it's a valid file.\n").c_str());
         }
     }
     closedir(dp);
@@ -738,7 +748,7 @@ bool display::mainMenu()
 {
     std::vector<std::string> files = std::vector<std::string>();
     move(0, 0);
-    if (getDir(this->savePath, files) != 0) {
+    if (getDir(false, this->savePath, files) != 0) {
         printw("Press any key to continue, or ^C to exit");
         std::cerr << "Press any key to continue, or ^C to exit" << std::endl;
         int i = 0;
@@ -1023,15 +1033,15 @@ std::string display::getForestName()
     return currentName;
 }
 
-void display::loadEightBitColor(int colorPairID, enum forest::colors colorDescriptionFG, enum forest::colors colorDescriptionBG)
+void display::loadEightBitColor(int colorPairID, forest::colors colorDescriptionFG, forest::colors colorDescriptionBG, int colorMode)
 {
-    int colorA = getColorByDescription(colorDescriptionFG);
-    int colorB = getColorByDescription(colorDescriptionBG);
+    int colorA = getColorByDescription(colorDescriptionFG, colorMode);
+    int colorB = getColorByDescription(colorDescriptionBG, colorMode);
     init_pair(colorPairID, colorA, colorB);
     //attron(COLOR_PAIR(colorPairID));
 }
 
-int display::getColorByDescription(enum forest::colors colorDescription)
+int display::getColorByDescription(enum forest::colors colorDescription, int colorMode)
 {
     if (colorMode == 4) {
         switch (colorDescription) {

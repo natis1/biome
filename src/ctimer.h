@@ -73,6 +73,7 @@ public:
     } config;
 
 
+    int colorMode;
     int colors[18];
     bool startDisplay(std::string timerName, double timeTotal);
     void initConfigData();
