@@ -591,7 +591,7 @@ void display::drawForest()
                     double forestCover = ((double) treeTiles) / totalTiles;
                     forestCover = std::pow(forestCover, 0.3);
                     forestCover = forestCover * 8.999;
-                    attron(COLOR_PAIR(24U - (std::floor(forestCover))));
+                    attron(COLOR_PAIR(24U - (uint)(std::floor(forestCover))));
                 }
                 addch(forestGrid[i][j]);
             }
