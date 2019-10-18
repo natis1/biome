@@ -24,6 +24,7 @@
 #include <iomanip>
 #include <unistd.h>
 #include <chrono>
+#include <sstream>
 
 
 void ctimer::initConfigData()
