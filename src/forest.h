@@ -27,6 +27,28 @@ namespace forest
 {
     static const int DATA_VERSION = 5;
     static const int OPTIONS_VERSION = 1;
+    
+    enum colors {
+        RED,
+        GREEN,
+        BLUE,
+        YELLOW,
+        CYAN,
+        ORANGE,
+        WHITE,
+        BLACK,
+        DARK_GREEN,
+        DARK_GREENISH,
+        LIGHT_GREEN,
+        VERY_GREEN,
+        PURE_GREY,
+        DARK_GREY,
+        MUDDY_BLUE,
+        BROWN,
+        LIGHT_BROWN,
+        DARK_BROWN,
+        VERY_BROWN
+    };
 
     struct biome {
         std::string name;
@@ -36,6 +58,7 @@ namespace forest
         double insectQuantityModifier;
         short uninhabitedColorPair[6];
         short inhabitedColorPair[6];
+        std::vector<enum colors> colorDescriptions;
         std::vector<int> uninhabitedSymbols;
         std::vector<int> inhabitedSymbols;
     };
@@ -43,22 +66,22 @@ namespace forest
     const biome biomes[] {
         // Uninhabited- Water which is muddy blue on brown. Inhabited- Moss which is very green on brown.
         // Uninhabited is water. ~ . - . Inhabited is moss: m, M
-        {"Swamp", "Moss", "Woodlouse", "Woodlice", 2.0 , {300, 300, 500, 500, 300, 0}, {200, 850, 75, 400, 300, 0}, {'~', '.', '-'}, {'m', 'M'}},
+        {"Swamp", "Moss", "Woodlouse", "Woodlice", 2.0 , {300, 300, 500, 500, 300, 0}, {200, 850, 75, 400, 300, 0}, {MUDDY_BLUE, BROWN, VERY_GREEN, BROWN}, {'~', '.', '-'}, {'m', 'M'}},
         // Uninhabited is gray rocks on light brown background. Inhabited is deep green on dark brown.
         // Uninhabited is mostly empty with occasional rocks. Inhabited is '^', 't', 'Y'
-        {"Mountain", "Cycads", "Wasp", "Wasps", 1.0 , {500, 500, 500, 850, 850, 500}, {100, 500, 100, 250, 250, 0}, {' ', ' ', ' ', ' ', ' ', 'o'}, {'^', 't', 'Y'}},
+        {"Mountain", "Cycads", "Wasp", "Wasps", 1.0 , {500, 500, 500, 850, 850, 500}, {100, 500, 100, 250, 250, 0}, {PURE_GREY, LIGHT_BROWN, DARK_GREEN, DARK_BROWN}, {' ', ' ', ' ', ' ', ' ', 'o'}, {'*', 't', 'Y'}},
         // Uninhabited is yellow sand: '.', '`', ',', '*', ''' on grey background (mostly to not hurt people's eyes).
         // Inhabited is light green cacti: 'Y', 'I', 'V', '|' on darker grey background.
-        {"Desert", "Cacti", "Beetle", "Beetles", 1.5 , {850, 850, 0, 500, 500, 500}, {500, 1000, 500, 300, 300, 300}, {'.', '`', ',', '*', '\''}, {'Y', 'I', 'V', '|'}},
+        {"Desert", "Cacti", "Beetle", "Beetles", 1.5 , {850, 850, 0, 500, 500, 500}, {500, 1000, 500, 300, 300, 300}, {YELLOW, PURE_GREY, LIGHT_GREEN, DARK_GREY}, {'.', '`', ',', '*', '\''}, {'Y', 'I', 'V', '|'}},
         // Uninhabited is orange sand: '.', '`', ',', '*', ''' on grey background (mostly to not hurt people's eyes).
         // Inhabited is big dark green trees: 'T', '|', 'I' on dark greenish background.
-        {"Chaparral", "Sequoia", "Ant", "Ants", 8.0 , {900, 550, 0, 500, 500, 500}, {100, 500, 0, 0, 100, 0}, {'.', '`', ',', '*', '\''}, {'T', '|', 'I'}},
+        {"Chaparral", "Sequoia", "Ant", "Ants", 8.0 , {900, 550, 0, 500, 500, 500}, {100, 500, 0, 0, 100, 0}, {ORANGE, PURE_GREY, DARK_GREEN, DARK_GREENISH}, {'.', '`', ',', '*', '\''}, {'T', '|', 'I'}},
         // Uninhabited is very brown trees: 't', 'I', '|', '^', 'Y' on dark greenish background
-        // Inhabited is orange orchids: 'S', 'p', 'R', 'Q', 'g', 'J', 'U', 'b' on dark greenish background
-        {"Jungle", "Orchids", "Bee", "Bees", 2.0 , {1000, 400, 0, 0, 700, 0}, {0, 500, 0, 0, 100, 0}, {'t', 'I', '|', '^', 'Y'}, {'S', 'p', 'R', 'Q', 'g', 'J', 'U', 'b'}},
+        // Inhabited is orange orchids: 'S', 'p', 'R', 'Q', 'g', 'J', 'U', 'b' on dark green background
+        {"Jungle", "Orchids", "Bee", "Bees", 2.0 , {400, 400, 0, 0, 100, 0}, {1000, 500, 0, 0, 400, 0}, {VERY_BROWN, DARK_GREEN, ORANGE, DARK_GREENISH}, {'t', 'I', '|', 'V', 'Y'}, {'S', 'p', 'R', 'Q', 'g', 'J', 'U', 'b'}},
         // Uninhabited is light blue/cyan snow: '.', '`', ',', '*', ''' on dark blue background (mostly to not hurt people's eyes).
         // Inhabited is vivid green trees: 'T', 't', 'I', 'Y', '^' on dark greenish background
-        {"Taiga", "Conifers", "Moth", "Moths", 1.0 , {600, 850, 850, 100, 100, 200}, {100, 900, 0, 0, 100, 0}, {'.', '`', ',', '*', '\''}, {'T', 't', 'I', 'Y', '^'}}
+        {"Taiga", "Conifers", "Moth", "Moths", 1.0 , {600, 850, 850, 100, 100, 200}, {100, 900, 0, 0, 100, 0}, {CYAN, MUDDY_BLUE, VERY_GREEN, DARK_GREENISH}, {'.', '`', ',', '*', '\''}, {'T', 't', 'I', 'Y', '^'}}
     };
 
 

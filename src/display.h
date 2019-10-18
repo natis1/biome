@@ -42,6 +42,7 @@ const size_t NUM_BIOMES = std::extent<decltype(BIOME_DESCRIPTIONS)>::value;
 static const std::string SAVE_LOCATION = {"/.config/biome/"};
 
 }
+static volatile int colorMode;
 
 class display
 {
@@ -51,6 +52,8 @@ public:
     static int getDir(std::string dir, std::vector<std::string> &files);
     static void signalReset();
     static long getTimerImpact(long timeLength);
+    static void loadEightBitColor(int colorPairID, enum forest::colors colorDescriptionFG, enum forest::colors colorDescriptionBG);
+    
 
 private:
     std::string getForestName();
@@ -76,7 +79,6 @@ private:
 
     void drawForest();
     void drawStatsScreen();
-
-
+    static int getColorByDescription(enum forest::colors colorDescription);
 };
 

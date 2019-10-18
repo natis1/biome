@@ -31,6 +31,8 @@
 #include <unistd.h>
 #include <thread>
 #include <cstdint>
+#include <term.h>
+
 
 using namespace display_consts;
 
@@ -40,6 +42,7 @@ static volatile bool handing_signals = true;
 
 display::display()
 {
+    colorMode = 24;
     std::string biomefolder = std::getenv("HOME");
     biomefolder += SAVE_LOCATION;
     std::cout << "Saving data to " << biomefolder << std::endl;
@@ -51,7 +54,8 @@ display::display()
     std::cerr << "has colors? " << has_colors() << " can change colors? " << can_change_color() << " num colors? " << COLORS << std::endl;
     if (!has_colors() || !can_change_color() || COLORS < 256) {
         move(0, 0);
-        printw("Your terminal seems to lack true color support.\nThis might be because it's old, or because the TERM environment variable isn't properly set to:\nTERM=xterm-256color\nYou can still try to play the game, but the experience might be worse.\nIt's recommended you use a terminal with full color compatibility like xfce4-terminal or even xterm.\nPress any key to continue or ctrl+C to quit");
+        printw("Your terminal seems to lack proper color support.\nThis might be because it's old, or because the TERM environment variable isn't properly set to:\nTERM=xterm-256color\nYou can still try to play the game, but the experience might be worse.\nIt's recommended you use a terminal with full color compatibility like xfce4-terminal or even xterm.\nPress any key to continue in 16 color mode or ctrl+C to quit");
+        colorMode = 4;
         getch();
         move(0, 0);
         clrtobot();
@@ -87,6 +91,14 @@ display::display()
     while (!mm) {
         mm = mainMenu();
     }
+    // Fix colors
+    if (colorMode != 24) {
+        loadEightBitColor(4, forest::PURE_GREY, forest::BLACK);
+        loadEightBitColor(5, forest::YELLOW, forest::BLACK);
+        loadEightBitColor(6, forest::ORANGE, forest::BLACK);
+        loadEightBitColor(8, forest::CYAN, forest::BLACK);
+    }
+    
     lastRundateRepair();
     getOptionsFile(biomefolder);
     drawForest();
@@ -94,20 +106,6 @@ display::display()
     endwin();
     handing_signals = false;
     t1.join();
-/*
-    if (std::ifstream(biomefolder + "forest")) {
-        sfile = fromJson<forest::saveFile>(pseudojson::fileToPseudoJson(biomefolder + "forest"));
-        std::cout << "loaded existing file" << std::endl;
-    } else {
-
-        getBiomeType();
-        getForestName();
-        forest::newForest(&sfile, 3);
-        pseudojson::writeToFile(toJson(sfile), biomefolder + "forest");
-        std::cout << "created new file" << std::endl;
-    }
-
-    nodelay(stdscr, true); */
 }
 
 
@@ -541,18 +539,32 @@ void display::drawForest()
 
         std::vector<int> biomeColors = forestOpacity();
 
-        init_color(80, biomeColors[0], biomeColors[1], biomeColors[2]);
-        init_color(81, biomeColors[3], biomeColors[4], biomeColors[5]);
-        init_pair(14, 80, 81);
-        init_color(82, forest::biomes[sfile.biomeType].uninhabitedColorPair[0], forest::biomes[sfile.biomeType].uninhabitedColorPair[1], forest::biomes[sfile.biomeType].uninhabitedColorPair[2]);
-        init_color(83, forest::biomes[sfile.biomeType].uninhabitedColorPair[3], forest::biomes[sfile.biomeType].uninhabitedColorPair[4], forest::biomes[sfile.biomeType].uninhabitedColorPair[5]);
-        init_pair(15, 82, 83);
-
-        std::vector<int> adjColors = adjacentTileOpacity();
-        for (int i = 0; i < 9; i++) {
-            init_color(90 + 2 * i, adjColors[0 + i], adjColors[9 + i], adjColors[18 + i]);
-            init_color(91 + 2 * i, adjColors[27 + i], adjColors[36 + i], adjColors[45 + i]);
-            init_pair(16 + i, 90 + 2 * i, 91 + 2 * i);
+        if (colorMode == 24) {
+            init_color(80, biomeColors[0], biomeColors[1], biomeColors[2]);
+            init_color(81, biomeColors[3], biomeColors[4], biomeColors[5]);
+            init_pair(14, 80, 81);
+            init_color(82, forest::biomes[sfile.biomeType].uninhabitedColorPair[0], forest::biomes[sfile.biomeType].uninhabitedColorPair[1], forest::biomes[sfile.biomeType].uninhabitedColorPair[2]);
+            init_color(83, forest::biomes[sfile.biomeType].uninhabitedColorPair[3], forest::biomes[sfile.biomeType].uninhabitedColorPair[4], forest::biomes[sfile.biomeType].uninhabitedColorPair[5]);
+            init_pair(15, 82, 83);
+            
+            std::vector<int> adjColors = adjacentTileOpacity();
+            for (int i = 0; i < 9; i++) {
+                init_color(90 + 2 * i, adjColors[0 + i], adjColors[9 + i], adjColors[18 + i]);
+                init_color(91 + 2 * i, adjColors[27 + i], adjColors[36 + i], adjColors[45 + i]);
+                init_pair(16 + i, 90 + 2 * i, 91 + 2 * i);
+            }
+        } else {
+            loadEightBitColor(14, forest::biomes[sfile.biomeType].colorDescriptions[0], forest::biomes[sfile.biomeType].colorDescriptions[1]);
+            loadEightBitColor(15, forest::biomes[sfile.biomeType].colorDescriptions[2], forest::biomes[sfile.biomeType].colorDescriptions[3]);
+            for (int i = 0; i < 9; i++) {
+                if (forestHealth / 20 > 9 - i) {
+                    // Load unhealthy
+                    loadEightBitColor(16 + i, forest::biomes[sfile.biomeType].colorDescriptions[0], forest::biomes[sfile.biomeType].colorDescriptions[1]);
+                } else {
+                    // Load healthy
+                    loadEightBitColor(16 + i, forest::biomes[sfile.biomeType].colorDescriptions[2], forest::biomes[sfile.biomeType].colorDescriptions[3]);
+                }
+            }
         }
 
         std::vector<bool> plTiles = getPloppedTiles(tiles, sfile.biomeSeed + zoomLevel, x, y, 4.0 / x, 4.0 / y);
@@ -763,7 +775,7 @@ bool display::mainMenu()
     init_color(65, 0, 0, 0);
     init_pair(65, 65, COLOR_BLACK);
     attron(COLOR_PAIR(65U));
-    printw("\nCan you see this text?\nYour terminal emulator lacks custom colors, but is pretending to have them.\nThese are known to be broken on qterminal and konsole.\nFor other terminals, check your emulator settings.");
+    printw("\nCan you see this text?\nYour terminal emulator lacks custom colors, but is pretending to have them.\nThese are known to be broken on the mac terminal, qterminal, and konsole.\nFor other terminals, check your emulator settings.\nThe game WILL look ugly without true colors, but for best results:\npress k now to load 256 color mode, and b to load 16 color mode");
     while (true) {
         move(LINES - 1, COLS - 1);
         int c = getch();
@@ -807,6 +819,16 @@ bool display::mainMenu()
 
                 return true;
             }
+        } else if (c == 'k' || c == 'K') {
+            move(LINES - 2, 0);
+            attron(COLOR_PAIR(65U));
+            printw("Loaded 256 color mode");
+            colorMode = 8;
+        } else if (c == 'b' || c == 'B') {
+            move(LINES - 2, 0);
+            attron(COLOR_PAIR(65U));
+            printw("Loaded 16 color mode ");
+            colorMode = 4;
         }
     }
     return false;
@@ -1000,6 +1022,107 @@ std::string display::getForestName()
 
     return currentName;
 }
+
+void display::loadEightBitColor(int colorPairID, enum forest::colors colorDescriptionFG, enum forest::colors colorDescriptionBG)
+{
+    int colorA = getColorByDescription(colorDescriptionFG);
+    int colorB = getColorByDescription(colorDescriptionBG);
+    init_pair(colorPairID, colorA, colorB);
+    //attron(COLOR_PAIR(colorPairID));
+}
+
+int display::getColorByDescription(enum forest::colors colorDescription)
+{
+    if (colorMode == 4) {
+        switch (colorDescription) {
+            case forest::RED:
+                return 1;
+            case forest::GREEN:
+                return 2;
+            case forest::BROWN:
+                return 3;
+            case forest::BLACK:
+                return 0;
+            case forest::BLUE:
+                return 12;
+            case forest::YELLOW:
+                return 11;
+            case forest::CYAN:
+                return 14;
+            case forest::ORANGE:
+                return 11; // lol it's yellow
+            case forest::WHITE:
+                return 15;
+            case forest::DARK_GREEN:
+                return 2;
+            case forest::DARK_GREENISH:
+                return 2;
+            case forest::LIGHT_GREEN:
+                return 10;
+            case forest::VERY_GREEN:
+                return 10;
+            case forest::PURE_GREY:
+                return 8;
+            case forest::DARK_GREY:
+                return 5; // It's purple. what other choice do I have?
+            case forest::MUDDY_BLUE:
+                return 4; // Navy blue
+            case forest::LIGHT_BROWN:
+                return 11;
+            case forest::DARK_BROWN:
+                return 1;
+            case forest::VERY_BROWN:
+                return 3;
+            default:
+                return 0;
+        }
+    } else {
+        switch (colorDescription) {
+            case forest::RED:
+                return 1;
+            case forest::GREEN:
+                return 2;
+            case forest::BROWN:
+                return 3;
+            case forest::BLACK:
+                return 0;
+            case forest::BLUE:
+                return 12;
+            case forest::YELLOW:
+                return 11;
+            case forest::CYAN:
+                return 115; // DarkSeaGreen3
+            case forest::ORANGE:
+                return 214; // Orange1
+            case forest::WHITE:
+                return 15;
+            case forest::DARK_GREEN:
+                return 28; // Green4
+            case forest::DARK_GREENISH:
+                return 22; // DarkGreen
+            case forest::LIGHT_GREEN:
+                return 41; // SpringGreen3
+            case forest::VERY_GREEN:
+                return 46; // Green1
+            case forest::PURE_GREY:
+                return 244; // Grey50
+            case forest::DARK_GREY:
+                return 237; // Grey23
+            case forest::MUDDY_BLUE:
+                return 103; // LightSlateGrey (wtf)
+            case forest::LIGHT_BROWN:
+                return 136; // DarkGoldenrod (wtf)
+            case forest::DARK_BROWN:
+                return 131; // IndianRed (wtf)
+            case forest::VERY_BROWN:
+                return 144; // NavajoWhite3 (wtf)
+            default:
+                return 0;
+        }
+    }
+}
+
+
 
 void display::signalReset()
 {
