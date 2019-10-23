@@ -636,28 +636,36 @@ void display::drawForest()
         attron(COLOR_PAIR(1U));
         printw("s - stats  |  g - grow  |  q - quit");
 
-        char c = getch();
-        if (c == 's' || c == 'S') {
-            drawStatsScreen();
-        } else if (c == 'g' || c == 'G') {
-            long runTime = getTimerLength();
-            if (runTime > 0) {
-                ctimer *ctim = new ctimer();
-                ctim->colorMode = colorMode;
-                ctim->initConfigData();
-                ctim->initColors();
-                bool didRun = ctim->startDisplay("Growing " + forest::biomes[sfile.biomeType].plantName, runTime);
-                if (didRun) {
-                    sfile.trees += getTimerImpact(runTime);
-                    sfile.productiveSeconds += runTime;
-                    sfile.weeklyRuntimes[0] += (double) (runTime / 3600.0);
-                    lastRundateRepair();
-                }
+        // This stupid double while loop makes the code run faster.
+        while (true) {
+            int c = getch();
+            // Redraw the screen because the person resized their window.
+            if (c == KEY_RESIZE || c == 410) {
+                break;
             }
 
-
-        } else if (c == 'q' || c == 'Q') {
-            return;
+            if (c == 's' || c == 'S') {
+                drawStatsScreen();
+                break;
+            } else if (c == 'g' || c == 'G') {
+                long runTime = getTimerLength();
+                if (runTime > 0) {
+                    ctimer *ctim = new ctimer();
+                    ctim->colorMode = colorMode;
+                    ctim->initConfigData();
+                    ctim->initColors();
+                    bool didRun = ctim->startDisplay("Growing " + forest::biomes[sfile.biomeType].plantName, runTime);
+                    if (didRun) {
+                        sfile.trees += getTimerImpact(runTime);
+                        sfile.productiveSeconds += runTime;
+                        sfile.weeklyRuntimes[0] += (double) (runTime / 3600.0);
+                        lastRundateRepair();
+                    }
+                }
+                break;
+            } else if (c == 'q' || c == 'Q') {
+                return;
+            }
         }
     }
 
