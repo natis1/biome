@@ -20,9 +20,7 @@
 #include <zconf.h>
 #include <signal.h>
 
-#ifdef _WIN32
-#elif _WIN64
-#else
+#if !defined(__CYGWIN__)
 #include <execinfo.h>
 #endif
 
@@ -37,6 +35,7 @@ bool osIsSmart()
     #endif
 }
 
+#if !defined(__CYGWIN__)
 void handler(int sig) {
     void *array[20];
     size_t size;
@@ -50,13 +49,16 @@ void handler(int sig) {
     backtrace_symbols_fd(array, size, STDERR_FILENO);
     exit(1);
 }
+#endif
 
 int main(int argc, char **argv) {
     if (!osIsSmart()) {
         std::cerr << "Unfortunately, your OS is not supported at this time" << std::endl;
         //return 1;
     }
+#if !defined(__CYGWIN__)
     signal(SIGSEGV, handler);
+#endif
     display();
     return 0;
 }
