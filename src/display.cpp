@@ -471,7 +471,7 @@ long display::getTimerLength()
                 printw((std::to_string( ntNew / 60) + " minutes and\n").c_str());
                 ntNew = ntNew % 60;
             }
-            printw((std::to_string( ntNew ) + " seconds?").c_str());
+            printw((std::to_string( ntNew ) + " seconds?\n").c_str());
 
             if (forestHealth < 100 && ofile.idealHoursPerWeek > 0.0) {
                 long amtHealed = (long) ((100.0 * (netTime / 3600.0)) / ofile.idealHoursPerWeek);
