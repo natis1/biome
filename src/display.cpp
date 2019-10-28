@@ -42,7 +42,11 @@ static volatile bool handing_signals = true;
 
 display::display()
 {
+#if !defined(__CYGWIN__)
     colorMode = 24;
+#else
+    colorMode = 8;
+#endif
     std::string biomefolder = std::getenv("HOME");
     biomefolder += SAVE_LOCATION;
     std::cout << "Saving data to " << biomefolder << std::endl;
