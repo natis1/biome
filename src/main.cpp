@@ -19,7 +19,12 @@
 #include "display.h"
 #include <zconf.h>
 #include <signal.h>
+
+#ifdef _WIN32
+#elif _WIN64
+#else
 #include <execinfo.h>
+#endif
 
 bool osIsSmart()
 {
@@ -48,8 +53,8 @@ void handler(int sig) {
 
 int main(int argc, char **argv) {
     if (!osIsSmart()) {
-        std::cout << "Unfortunately, your OS is not supported at this time" << std::endl;
-        return 1;
+        std::cerr << "Unfortunately, your OS is not supported at this time" << std::endl;
+        //return 1;
     }
     signal(SIGSEGV, handler);
     display();
