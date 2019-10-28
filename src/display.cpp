@@ -563,10 +563,10 @@ void display::drawForest()
             for (int i = 0; i < 9; i++) {
                 if (forestHealth / 20 > 9 - i) {
                     // Load unhealthy
-                    loadEightBitColor(16 + i, forest::biomes[sfile.biomeType].colorDescriptions[0], forest::biomes[sfile.biomeType].colorDescriptions[1], colorMode);
+                    loadEightBitColor(16 + i, forest::biomes[sfile.biomeType].colorDescriptions[2], forest::biomes[sfile.biomeType].colorDescriptions[3], colorMode);
                 } else {
                     // Load healthy
-                    loadEightBitColor(16 + i, forest::biomes[sfile.biomeType].colorDescriptions[2], forest::biomes[sfile.biomeType].colorDescriptions[3], colorMode);
+                    loadEightBitColor(16 + i, forest::biomes[sfile.biomeType].colorDescriptions[0], forest::biomes[sfile.biomeType].colorDescriptions[1], colorMode);
                 }
             }
         }
