@@ -531,7 +531,7 @@ void display::drawForest()
         std::mt19937 rng(sfile.biomeSeed);
         std::uniform_int_distribution<int> colorRn(0, 5);
         std::uniform_int_distribution<int> inhabitedRn(0, forest::biomes[sfile.biomeType].inhabitedSymbols.size() - 1);
-        std::uniform_int_distribution<int> uninhabitedRn(0, forest::biomes[sfile.biomeType].inhabitedSymbols.size() - 1);
+        std::uniform_int_distribution<int> uninhabitedRn(0, forest::biomes[sfile.biomeType].uninhabitedSymbols.size() - 1);
         long tiles = getNumInhabitedTiles();
         long zoomLevel = getZoomLevel();
         move(0, 0);
