@@ -385,7 +385,7 @@ long display::getTimerImpact(long timeLength)
 {
     const double maxTreesPerSecond = 0.01666667;
     const double treesPerSecond = 0.00333333334;
-    const double treeFactor = 1.2;
+    const double treeFactor = 1.6477; // Such that one grows the maximum number of trees with a hour or more long timer
     long maxTrees = (long) (maxTreesPerSecond * timeLength);
     long actualTrees = (long) (std::pow(treesPerSecond * timeLength, treeFactor));
     if (actualTrees > maxTrees) {
@@ -623,16 +623,18 @@ void display::drawForest()
             attron(COLOR_PAIR(7U));
         }
         printw("Health [");
+        std::string healthStr = "";
         int j = forestHealth;
         for (int i = 0; i < 50; i++) {
             if (j > 0) {
-                addch('#');
+                healthStr += "#";
                 j = j - 2;
             } else {
-                addch(' ');
+                healthStr += " ";
             }
         }
-        addch(']');
+        healthStr += "]";
+        printw(healthStr.c_str());
         attron(COLOR_PAIR(1U));
         printw( (" 1 tile = " + getScaleString(zoomLevel) + "m").c_str());
 
