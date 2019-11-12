@@ -351,7 +351,7 @@ void display::drawStatsScreen()
         const long healthyBugTreeRatio = 750;
         double fhLevel = (forestHealth > 0.02) ? (forestHealth / 100.0) : 0.02;
         long actualInsectCount = (long) (sfile.trees * healthyBugTreeRatio * fhLevel * forest::biomes[sfile.biomeType].insectQuantityModifier);
-        long uniqueInsectSpecies = std::pow(sfile.trees, 0.5);
+        long uniqueInsectSpecies = std::pow(sfile.trees, 0.7);
         move(1, 0);
         printw(("Biome type: " + forest::biomes[sfile.biomeType].name + "\n").c_str());
 
