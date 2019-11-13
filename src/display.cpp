@@ -58,8 +58,8 @@ display::display()
     std::cerr << "has colors? " << has_colors() << " can change colors? " << can_change_color() << " num colors? " << COLORS << std::endl;
     if (!has_colors() || !can_change_color() || COLORS < 256) {
         move(0, 0);
-        printw("Your terminal seems to lack proper color support.\nThis might be because it's old, or because the TERM environment variable isn't properly set to:\nTERM=xterm-256color\nYou can still try to play the game, but the experience might be worse.\nIt's recommended you use a terminal with full color compatibility like xfce4-terminal or even xterm.\nPress any key to continue in 16 color mode or ctrl+C to quit");
-        colorMode = 4;
+        printw("Your terminal seems to lack proper color support.\nThis might be because it's old, or because the TERM environment variable isn't properly set to:\nTERM=xterm-256color\nYou can still try to play the game, but the experience might be worse.\nIt's recommended you use a terminal with full color compatibility like xfce4-terminal or even xterm.\nPress any key to continue in mono-color mode or ctrl+C to quit");
+        colorMode = 1;
         getch();
         move(0, 0);
         clrtobot();
@@ -347,10 +347,10 @@ void display::drawStatsScreen()
     clrtobot();
     while (true) {
         // I dunno the actual one. This is my best layman's guess.
-        const long healthyBugTreeRatio = 5000;
-        double fhLevel = (forestHealth > 0) ? (forestHealth / 100.0) : 0.005;
+        const long healthyBugTreeRatio = 750;
+        double fhLevel = (forestHealth > 0.02) ? (forestHealth / 100.0) : 0.02;
         long actualInsectCount = (long) (sfile.trees * healthyBugTreeRatio * fhLevel * forest::biomes[sfile.biomeType].insectQuantityModifier);
-        long uniqueInsectSpecies = std::pow(sfile.trees, 0.5);
+        long uniqueInsectSpecies = std::pow(sfile.trees, 0.7);
         move(1, 0);
         printw(("Biome type: " + forest::biomes[sfile.biomeType].name + "\n").c_str());
 
@@ -367,6 +367,8 @@ void display::drawStatsScreen()
             } else {
                 attron(COLOR_PAIR(1U));
             }
+            if (colorMode == 1)
+                attron(COLOR_PAIR(1U));
             printw(std::to_string(sfile.weeklyRuntimes[i]).c_str());
             attron(COLOR_PAIR(1U));
             printw("\n");
@@ -384,7 +386,7 @@ long display::getTimerImpact(long timeLength)
 {
     const double maxTreesPerSecond = 0.01666667;
     const double treesPerSecond = 0.00333333334;
-    const double treeFactor = 1.2;
+    const double treeFactor = 1.6477; // Such that one grows the maximum number of trees with a hour or more long timer
     long maxTrees = (long) (maxTreesPerSecond * timeLength);
     long actualTrees = (long) (std::pow(treesPerSecond * timeLength, treeFactor));
     if (actualTrees > maxTrees) {
@@ -563,15 +565,15 @@ void display::drawForest()
                 init_pair(16 + i, 90 + 2 * i, 91 + 2 * i);
             }
         } else {
-            loadEightBitColor(14, forest::biomes[sfile.biomeType].colorDescriptions[0], forest::biomes[sfile.biomeType].colorDescriptions[1], colorMode);
-            loadEightBitColor(15, forest::biomes[sfile.biomeType].colorDescriptions[2], forest::biomes[sfile.biomeType].colorDescriptions[3], colorMode);
+            loadEightBitColor(14, forest::biomes[sfile.biomeType].colorDescriptions[2], forest::biomes[sfile.biomeType].colorDescriptions[3], colorMode);
+            loadEightBitColor(15, forest::biomes[sfile.biomeType].colorDescriptions[0], forest::biomes[sfile.biomeType].colorDescriptions[1], colorMode);
             for (int i = 0; i < 9; i++) {
-                if (forestHealth / 20 > 9 - i) {
+                if (forestHealth / 20 < i) {
                     // Load unhealthy
-                    loadEightBitColor(16 + i, forest::biomes[sfile.biomeType].colorDescriptions[2], forest::biomes[sfile.biomeType].colorDescriptions[3], colorMode);
+                    loadEightBitColor(16 + i, forest::biomes[sfile.biomeType].colorDescriptions[0], forest::biomes[sfile.biomeType].colorDescriptions[1], colorMode);
                 } else {
                     // Load healthy
-                    loadEightBitColor(16 + i, forest::biomes[sfile.biomeType].colorDescriptions[0], forest::biomes[sfile.biomeType].colorDescriptions[1], colorMode);
+                    loadEightBitColor(16 + i, forest::biomes[sfile.biomeType].colorDescriptions[2], forest::biomes[sfile.biomeType].colorDescriptions[3], colorMode);
                 }
             }
         }
@@ -614,6 +616,9 @@ void display::drawForest()
                     forestCover = forestCover * 8.999;
                     attron(COLOR_PAIR((uint) (24U - (uint)(std::floor(forestCover)))));
                 }
+                if (colorMode == 1)
+                    attron(COLOR_PAIR(1U));
+
                 addch(forestGrid[i][j]);
             }
         }
@@ -627,17 +632,21 @@ void display::drawForest()
         } else {
             attron(COLOR_PAIR(7U));
         }
+        if (colorMode == 1)
+            attron(COLOR_PAIR(1U));
         printw("Health [");
+        std::string healthStr = "";
         int j = forestHealth;
         for (int i = 0; i < 50; i++) {
             if (j > 0) {
-                addch('#');
+                healthStr += "#";
                 j = j - 2;
             } else {
-                addch(' ');
+                healthStr += " ";
             }
         }
-        addch(']');
+        healthStr += "]";
+        printw(healthStr.c_str());
         attron(COLOR_PAIR(1U));
         printw( (" 1 tile = " + getScaleString(zoomLevel) + "m").c_str());
 
@@ -799,7 +808,7 @@ bool display::mainMenu()
     init_color(65, 0, 0, 0);
     init_pair(65, 65, COLOR_BLACK);
     attron(COLOR_PAIR(65U));
-    printw("\nCan you see this text?\nYour terminal emulator lacks custom colors, but is pretending to have them.\nThese are known to be broken on the mac terminal, qterminal, and konsole.\nFor other terminals, check your emulator settings.\nThe game WILL look ugly without true colors, but for best results:\npress k now to load 256 color mode, and b to load 16 color mode");
+    printw("\nCan you see this text?\nYour terminal emulator lacks custom colors.\nThese are known to not work on the mac terminal, qterminal, and konsole.\nFor other terminals, check your emulator settings.\nThe game WILL look ugly without true colors, but for best results:\npress k now to load 256 color mode, and b to load 16 color mode.\nOr m to disable colors.");
     while (true) {
         move(LINES - 1, COLS - 1);
         int c = getch();
@@ -845,14 +854,19 @@ bool display::mainMenu()
             }
         } else if (c == 'k' || c == 'K') {
             move(LINES - 2, 0);
-            attron(COLOR_PAIR(65U));
+            attron(COLOR_PAIR(1U));
             printw("Loaded 256 color mode");
             colorMode = 8;
         } else if (c == 'b' || c == 'B') {
             move(LINES - 2, 0);
-            attron(COLOR_PAIR(65U));
+            attron(COLOR_PAIR(1U));
             printw("Loaded 16 color mode ");
             colorMode = 4;
+        } else if (c == 'm' || c == 'M') {
+            move(LINES - 2, 0);
+            attron(COLOR_PAIR(1U));
+            printw("Loaded mono color mode ");
+            colorMode = 1;
         }
     }
     return false;
@@ -1088,7 +1102,9 @@ int display::getColorByDescription(enum forest::colors colorDescription, int col
             case forest::PURE_GREY:
                 return 8;
             case forest::DARK_GREY:
-                return 5; // It's purple. what other choice do I have?
+                return 0; // It's black. what other choice do I have?
+            case forest::VERY_DARK_GREY:
+                return 0; // It's black. what other choice do I have?
             case forest::MUDDY_BLUE:
                 return 4; // Navy blue
             case forest::LIGHT_BROWN:
@@ -1097,6 +1113,14 @@ int display::getColorByDescription(enum forest::colors colorDescription, int col
                 return 1;
             case forest::VERY_BROWN:
                 return 3;
+            case forest::DARK_BLUE:
+                return 4; // Navy blue
+            case forest::VERY_DARK_BLUE:
+                return 4; // Navy blue
+            case forest::LIGHT_CYAN:
+                return 14; // Cyan
+            case forest::EIGHT_COLOR_WHITE:
+                return 7;
             default:
                 return 0;
         }
@@ -1137,9 +1161,19 @@ int display::getColorByDescription(enum forest::colors colorDescription, int col
             case forest::LIGHT_BROWN:
                 return 136; // DarkGoldenrod (wtf)
             case forest::DARK_BROWN:
-                return 131; // IndianRed (wtf)
+                return 58; // Orange4 (wtf)
             case forest::VERY_BROWN:
                 return 144; // NavajoWhite3 (wtf)
+            case forest::DARK_BLUE:
+                return 17; // Dark blue
+            case forest::VERY_DARK_GREY:
+                return 235; // 10% grey.
+            case forest::VERY_DARK_BLUE:
+                return 17;
+            case forest::LIGHT_CYAN:
+                return 152;
+            case forest::EIGHT_COLOR_WHITE:
+                return 7;
             default:
                 return 0;
         }

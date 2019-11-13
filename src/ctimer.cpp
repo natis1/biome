@@ -115,6 +115,8 @@ void ctimer::initColors()
         display::loadEightBitColor(41, forest::GREEN, forest::RED, colorMode);
         display::loadEightBitColor(42, forest::WHITE, forest::BLACK, colorMode);
         display::loadEightBitColor(43, forest::RED, forest::GREEN, colorMode);
+
+        display::loadEightBitColor(2, forest::BLACK, forest::EIGHT_COLOR_WHITE, colorMode);
     }
 }
 
@@ -187,6 +189,8 @@ bool ctimer::timerLoop()
         if (c == 27 || c == 'q' || c == 'Q') {
             nodelay(stdscr, FALSE);
             attron(COLOR_PAIR(8U));
+            if (colorMode == 1)
+                attron(COLOR_PAIR(1U));
             move(0, 0);
             printw(("Are you sure you want to exit now?\n" + std::to_string(display::getTimerImpact((long) timeTotal)) + " trees will die!").c_str());
             printw("\n[y/N]");
@@ -208,6 +212,9 @@ bool ctimer::timerLoop()
             int barSize = (int) (((COLS - 2) * percentageBar) + 0.5);
 
             attron(COLOR_PAIR(40U));
+            if (colorMode == 1)
+                attron(COLOR_PAIR(1U));
+
             rectangle(0, 0, 4, COLS - 1);
             int leftMid = (COLS / 2) - (timerName.length() / 2);
             if (leftMid > 0) {
@@ -215,14 +222,23 @@ bool ctimer::timerLoop()
                 printw(timerName.c_str());
             }
             attron(COLOR_PAIR(43U));
+            if (colorMode == 1)
+                attron(COLOR_PAIR(2U));
+
             std::string bar (barSize, ' ');
             std::string barEnd (COLS - 2 - barSize, ' ');
             move (2, 1);
             printw(bar.c_str());
             attron(COLOR_PAIR(41U));
+            if (colorMode == 1)
+                attron(COLOR_PAIR(1U));
+
             printw(barEnd.c_str());
             move (3, 1);
             attron(COLOR_PAIR(40U));
+            if (colorMode == 1)
+                attron(COLOR_PAIR(1U));
+
             printw(formatTime(t.count()).c_str());
 
             if (COLS - 1 - endTime.length() > 0) {
@@ -249,6 +265,9 @@ void ctimer::endTimer()
         int barSize = (COLS - 2);
 
         attron(COLOR_PAIR(40U));
+        if (colorMode == 1)
+            attron(COLOR_PAIR(1U));
+
         rectangle(0, 0, 4, COLS - 1);
         int leftMid = (COLS / 2) - (timerName.length() / 2);
         if (leftMid > 0) {
@@ -256,11 +275,17 @@ void ctimer::endTimer()
             printw(timerName.c_str());
         }
         attron(COLOR_PAIR(43U));
+        if (colorMode == 1)
+            attron(COLOR_PAIR(2U));
+
         std::string bar (barSize, ' ');
         move (2, 1);
         printw(bar.c_str());
         move (3, 1);
         attron(COLOR_PAIR(40U));
+        if (colorMode == 1)
+            attron(COLOR_PAIR(1U));
+
         printw(endTime.c_str());
 
         if (COLS - 1 - endTime.length() > 0) {
