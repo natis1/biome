@@ -26,6 +26,15 @@
 #include <chrono>
 #include <sstream>
 
+ctimer::ctimer(int color, double timeTotal)
+{
+    this->colorMode = color;
+    initConfigData();
+    initColors();
+    this->timeTotal = timeTotal;
+}
+
+
 
 void ctimer::initConfigData()
 {
@@ -109,13 +118,11 @@ void ctimer::initColors()
     }
 }
 
-bool ctimer::startDisplay(std::string timerName, double timeTotal)
+bool ctimer::startDisplay(const std::string timerName)
 {
     this->timerName = timerName;
-    this->timeTotal = timeTotal;
     curs_set(0);
     return timerLoop();
-    curs_set(1);
 }
 
 
@@ -135,19 +142,18 @@ void ctimer::rectangle(int y1, int x1, int y2, int x2)
 std::string ctimer::formatTime(double time)
 {
     std::string tOut;
-    int days = time / 86400;
-    time = std::fmod(time, 86400.0);
-    int hours = time / 3600;
-    time = std::fmod(time, 3600.0);
-    int minutes = time / 60;
-    time = std::fmod(time, 60.0);
-
+    int days = (int) (time / (MINUTE_LENGTH * HOUR_LENGTH * DAY_LENGTH));
+    time = std::fmod(time, (MINUTE_LENGTH * HOUR_LENGTH * DAY_LENGTH));
+    int hours = (int) (time / (MINUTE_LENGTH * HOUR_LENGTH));
+    time = std::fmod(time, MINUTE_LENGTH * HOUR_LENGTH);
+    int minutes = (int) (time / MINUTE_LENGTH);
+    time = std::fmod(time, MINUTE_LENGTH);
     if (days > 0) {
         tOut += std::to_string(days) + ":";
     }
     if (hours > 9) {
         tOut += std::to_string(hours) + ":";
-    } else if (hours > 0) {
+    } else {
         tOut += "0" + std::to_string(hours) + ":";
     }
     if (minutes > 9) {
@@ -262,16 +268,10 @@ void ctimer::endTimer()
             printw(endTime.c_str());
         }
 
-        int c = getch();
+        getch();
 
         return;
     }
-}
-
-double ctimer::getTimerPercentage()
-{
-    assert(timeTotal > 0.0);
-    return (timePassed / timeTotal > 1.0) ? 1.0 : (timePassed / timeTotal);
 }
 
 

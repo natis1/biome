@@ -306,7 +306,6 @@ void display::lastRundateRepair()
         getch();
         move(0, 0);
         clrtobot();
-        diffTime = 0;
     } else if (diffTime < 7) {
         if (diffTime > 1) {
             // oof
@@ -455,19 +454,25 @@ long display::getTimerLength()
             clrtobot();
             printw("Are you sure you want to create a timer for: \n");
             long ntNew = netTime;
-            if (ntNew >= 31557600) {
+            bool hasYears = (ntNew >= 31557600);
+            
+            if (hasYears) {
                 printw((std::to_string(ntNew / 31557600) + " years\n").c_str());
                 ntNew = ntNew % 31557600;
             }
-            if (ntNew >= 86400) {
+            bool hasDays = (ntNew >= 86400);
+            
+            if (hasDays || hasYears) {
                 printw((std::to_string( ntNew / 86400) + " days\n").c_str());
                 ntNew = ntNew % 86400;
             }
-            if (ntNew >= 3600) {
+            bool hasHours = (ntNew >= 3600);
+            
+            if (hasHours || hasDays || hasYears) {
                 printw((std::to_string( ntNew / 3600) + " hours\n").c_str());
                 ntNew = ntNew % 3600;
             }
-            if (ntNew >= 60) {
+            if (ntNew >= 60 || hasHours || hasDays || hasYears) {
                 printw((std::to_string( ntNew / 60) + " minutes and\n").c_str());
                 ntNew = ntNew % 60;
             }
@@ -654,11 +659,8 @@ void display::drawForest()
             } else if (c == 'g' || c == 'G') {
                 long runTime = getTimerLength();
                 if (runTime > 0) {
-                    ctimer *ctim = new ctimer();
-                    ctim->colorMode = colorMode;
-                    ctim->initConfigData();
-                    ctim->initColors();
-                    bool didRun = ctim->startDisplay("Growing " + forest::biomes[sfile.biomeType].plantName, runTime);
+                    ctimer *ctim = new ctimer(colorMode, runTime);
+                    bool didRun = ctim->startDisplay("Growing " + forest::biomes[sfile.biomeType].plantName);
                     if (didRun) {
                         sfile.trees += getTimerImpact(runTime);
                         sfile.productiveSeconds += runTime;
@@ -830,7 +832,7 @@ bool display::mainMenu()
             return true;
         } else if (c >= '1' && c <= '9') {
             int realInt = c - '0';
-            if (realInt <= files.size()) {
+            if (realInt < files.size()) {
                 realInt--;
                 sfile = fromJsonForest<forest::saveFile>(pseudojson::fileToPseudoJson(this->savePath + files[realInt]));
                 if (sfile.dataVersion < forest::DATA_VERSION) {

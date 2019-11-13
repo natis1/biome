@@ -17,10 +17,10 @@
  */
 
 #pragma once
-#define UNSET_INTVAL -9969420
-#define UNSET_DOUBLEVAL -9969.420
-#define DATATYPE_SPTR 6
-#define DATATYPE_FIXEDSIZE -10
+#define UNSET_INTVAL (-9969420)
+#define UNSET_DOUBLEVAL (-9969.420)
+#define DATATYPE_SPTR (6)
+#define DATATYPE_FIXEDSIZE (-10)
 
 #include <array>
 #include <tuple>
@@ -31,7 +31,7 @@
 
 // sequence for
 template <typename T, T... S, typename F>
-constexpr void for_sequence(std::integer_sequence<T, S...>, F&& f) {
+constexpr void for_sequence(std::integer_sequence<T, S...> seq, F&& f) {
 	using unpack_t = long[];
 	(void)unpack_t{(static_cast<void>(f(std::integral_constant<T, S>{})), 0)..., 0};
 }
@@ -59,7 +59,7 @@ namespace pseudojson {
             return data.subObject[std::move(name)];
         }
 
-        const Value& operator[](std::string name) const {
+        const Value& operator[](const std::string &name) const {
             auto it = data.subObject.find(std::move(name));
 
             if (it != data.subObject.end()) {
@@ -69,14 +69,14 @@ namespace pseudojson {
             throw;
         }
 
-        Value& operator=(std::string value) {
+        Value& operator=(const std::string &value) {
             data.string = value;
             return *this;
         }
 
         Value& operator=(long value) {
             data.lon = value;
-            data.boolSetBool = value;
+            data.boolSetBool = (value == 1);
             return *this;
         }
 
@@ -96,12 +96,12 @@ namespace pseudojson {
             return *this;
         }
 
-        Value& operator=(std::vector<double> value) {
+        Value& operator=(const std::vector<double> &value) {
             data.dptr = value;
             return *this;
         }
 
-        Value& operator=(std::vector<std::string> value) {
+        Value& operator=(const std::vector<std::string> &value) {
             data.sptr = value;
             data.dataType = DATATYPE_SPTR;
             return *this;
@@ -110,7 +110,7 @@ namespace pseudojson {
     };
 
     std::string getValue(const ValueData *v);
-    std::pair<std::string, Value> stringToValue(std::string valueLine);
+    std::pair<std::string, Value> stringToValue(const std::string &valueLine);
     pseudojson::Value fileToPseudoJson(std::string filename);
 
     std::vector<std::string> split(const std::string &s, char delim);
