@@ -49,17 +49,6 @@ struct saveFile* forest::newForest(saveFile *s, long biome = 0, std::string name
     }
 
     pseudojson::Value jsonForest = toJson(*s);
-
-    for( auto const& [key, val] : jsonForest.data.subObject ) {
-        std::cerr << key << " : " << pseudojson::getValue(&val.data) << std::endl;
-    }
-
-    pseudojson::writeToFile(jsonForest, "test.txt");
-
-    std::cerr << "Wrote biome to file" << std::endl;
-
-
-    //std::cout << "Current Forest is " << jsonForest.data.subObject << std::endl;
     return s;
 }
 

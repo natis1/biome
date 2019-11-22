@@ -1,4 +1,4 @@
-    /*
+/*
  * Biome, A simple ncurses productivity program, made while procrastinating.
  * Copyright (C) 2019  Eli Stone
  *
