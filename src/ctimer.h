@@ -27,6 +27,11 @@
 class ctimer
 {
 public:
+    static const int MINUTE_LENGTH = 60;
+    static const int HOUR_LENGTH = 60;
+    static const int DAY_LENGTH = 24;
+    static const int YEAR_LENGTH = 365;
+    ctimer(int color, double timeTotal);
     struct configData {
         long text_foreground_r;
         long text_foreground_g;
@@ -75,17 +80,15 @@ public:
 
     int colorMode;
     int colors[18];
-    bool startDisplay(std::string timerName, double timeTotal);
+    bool startDisplay(std::string timerName);
     void initConfigData();
     void initColors();
-    double getTimerPercentage();
 private:
     double timeTotal;
-    double timePassed;
     std::string timerName;
     bool timerLoop();
     void endTimer();
-    void rectangle(int y1, int x1, int y2, int x2);
-    std::string formatTime(double time);
+    static void rectangle(int y1, int x1, int y2, int x2);
+    static std::string formatTime(double time);
 };
 

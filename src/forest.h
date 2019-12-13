@@ -89,6 +89,38 @@ namespace forest
         {"Taiga", "Conifers", "Moth", "Moths", 1.0 , {600, 850, 850, 100, 100, 200}, {100, 900, 0, 0, 100, 0}, {LIGHT_CYAN, VERY_DARK_BLUE, VERY_GREEN, DARK_GREENISH}, {'.', '`', ',', '*', '\''}, {'T', 't', 'I', 'Y', 'J'}}
     };
 
+    const std::string WISDOM[] {
+        // Gameplay
+        "Timers can be used to help you do anything.\nIf you're struggling to eat, why not set one for that?",
+        "Struggling to keep organized?\nConsider creating different biomes for different aspects of your life.",
+        "All the biome files are in plain text.\nI won't tell anyone if you cheat- but you'd only be cheating yourself.",
+        "Have you checked out the config file?\nIt allows you to block websites while the timer is running, which might help.",
+        "Your daily streak is the number of days in a row\nthat you achieved at least 1/7th of your total weekly goals.",
+        "If you achieved your weekly goal, your biome health will be 100%.",
+        "Coding is hard, if you found a bug or have a suggestion check out the git page\nhttps://gitlab.com/natis1/biome",
+        "Biome is free software. You are free to do whatever you want with the code\nJust keep it free.",
+        "Timers that last more than a day don't really make sense\nBut you can make them if you want. You might lose your streak though.",
+        "Biome will autosave, but if you wanna be safe\nyou can always back up your biome file by copying it somewhere else.",
+        "Biome should run on a 100MHz CPU.\nIf it lags on a product like this please report it as a bug.",
+        "If you're on Linux, you should really get a true color terminal\nThe forest looks way more beautiful with the additional colors.",
+        "The name of your save file should match the name of your biome\nIf you want to rename your biome please rename both.",
+        "The total area of your biome in square meters\nis approximately 2 * the number of plants inside.",
+        "The number of insect species that your biome is host to\ndepends only on the number of plants inside.",
+        "If you aren't enforcing any computer restrictions,\nBiome will only act as a timer, and you won't need to run Biome daemon.",
+        "Don't have *nix on your work computer?\nYou can also run Biome over ssh, or maybe even on windows subsystem.",
+        "You can open more than one instance of biome at once\nBut only if you are looking at different biomes",
+        "It's worth trying to get your biome to maximum health.\nIt gets a lot prettier the healthier it is",
+        // Physics
+        // Biology
+
+        "Insects are important to a biome's health, be sure to keep yours healthy to keep the number high.",
+        "The swamp biome may have the ugliest colors but it's the best CO2 remover"
+
+    };
+    const size_t WISDOM_SIZE = std::extent<decltype(WISDOM)>::value;
+
+
+
 
     struct saveFile {
         long dataVersion;

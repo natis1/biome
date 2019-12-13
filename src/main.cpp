@@ -24,24 +24,16 @@
 #include <execinfo.h>
 #endif
 
-bool osIsSmart()
-{
-    #ifdef _WIN32
-    return false;
-    #elif _WIN64
-    return false;
-    #else
-    return true;
-    #endif
-}
-
 #if !defined(__CYGWIN__)
+
+const size_t HANDLER_TRACEBACK_SIZE = 20;
+
 void handler(int sig) {
-    void *array[20];
+    void *array[HANDLER_TRACEBACK_SIZE];
     size_t size;
 
     // get void*'s for all entries on the stack
-    size = backtrace(array, 20);
+    size = backtrace(array, HANDLER_TRACEBACK_SIZE);
 
     // print out all the frames to stderr
     std::cerr << "Segfault. Size is: " << size << std::endl;
@@ -51,14 +43,10 @@ void handler(int sig) {
 }
 #endif
 
-int main(int argc, char **argv) {
-    if (!osIsSmart()) {
-        std::cerr << "Unfortunately, your OS is not supported at this time" << std::endl;
-        //return 1;
-    }
+int main() {
 #if !defined(__CYGWIN__)
     signal(SIGSEGV, handler);
 #endif
-    display();
+    new display();
     return 0;
 }
