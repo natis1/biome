@@ -23,9 +23,9 @@ using namespace pseudojson;
 
 std::string pseudojson::getValue(const pseudojson::ValueData* v)
 {
-    std::string prefix = "";
-    std::string affix = "";
-    std::string val = "";
+    std::string prefix;
+    std::string affix;
+    std::string val;
     if (v->lon != UNSET_INTVAL) {
         prefix = "l";
         val = std::to_string(v->lon);
@@ -36,7 +36,7 @@ std::string pseudojson::getValue(const pseudojson::ValueData* v)
         prefix = "\"";
         affix = "\"";
         val = v->string;
-    } else if (v->dptr.size() > 0) {
+    } else if (!v->dptr.empty()) {
         prefix = "D";
         for (unsigned int i = 0; i < v->dptr.size(); i++) {
             if (i != 0) {
@@ -68,7 +68,8 @@ std::string pseudojson::getValue(const pseudojson::ValueData* v)
 
 std::vector<std::string> pseudojson::split(const std::string &text, char sep) {
     std::vector<std::string> tokens;
-    std::size_t start = 0, end = 0;
+    std::size_t start = 0;
+    std::size_t end = 0;
     while ((end = text.find(sep, start)) != std::string::npos) {
         tokens.push_back(text.substr(start, end - start));
         start = end + 1;
@@ -77,7 +78,7 @@ std::vector<std::string> pseudojson::split(const std::string &text, char sep) {
     return tokens;
 }
 
-std::pair<std::string, pseudojson::Value> pseudojson::stringToValue(std::string valueLine)
+std::pair<std::string, pseudojson::Value> pseudojson::stringToValue(const std::string &valueLine)
 {
     std::vector<std::string> x = pseudojson::split(valueLine, ':');
     x.at(0) = x.at(0).substr(0, x.at(0).size()-1);

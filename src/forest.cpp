@@ -20,15 +20,15 @@
 #include <stdio.h>
 #include <string.h>
 
-
 using namespace forest;
 
+const int default_idealHoursPerWeek = 7;
 struct optionsFile * forest::newOptions(optionsFile* o)
 {
     o->optionsVersion = OPTIONS_VERSION;
-    o->blockInternet = 0;
-    o->blockWebsites = 0;
-    o->idealHoursPerWeek = 7;
+    o->blockInternet = false;
+    o->blockWebsites = false;
+    o->idealHoursPerWeek = default_idealHoursPerWeek;
     return o;
 }
 
@@ -39,11 +39,11 @@ struct saveFile* forest::newForest(saveFile *s, long biome = 0, std::string name
     s->dataVersion = DATA_VERSION;
     s->productiveSeconds = 0;
     s->trees = 0;
-    s->name = name;
+    s->name = std::move(name);
     s->biomeSeed = time(0);
     s->lastRunTime = 0;
     s->dailyStreak = 0;
-    for (int i = 0; i < 7; i++) {
+    for (int i = 0; i < DAYS_PER_WEEK; i++) {
         s->weeklyRundifficulties.push_back(0.0);
         s->weeklyRuntimes.push_back(0.0);
     }
@@ -55,11 +55,11 @@ struct saveFile* forest::newForest(saveFile *s, long biome = 0, std::string name
 struct saveFile * forest::updateForest(forest::saveFile* s)
 {
     // Pre 5
-    if (s->dataVersion < 5) {
+    if (s->dataVersion < DATA_VERSION_REV1) {
         s->biomeSeed = time(0);
         s->lastRunTime = 0;
         s->dailyStreak = 0;
-        for (int i = 0; i < 7; i++) {
+        for (int i = 0; i < DAYS_PER_WEEK; i++) {
             s->weeklyRundifficulties.push_back(0.0);
             s->weeklyRuntimes.push_back(0.0);
         }

@@ -25,8 +25,11 @@
 
 namespace forest
 {
-    static const int DATA_VERSION = 5;
     static const int OPTIONS_VERSION = 1;
+    static const int DAYS_PER_WEEK = 7;
+    static const int DATA_VERSION_REV1 = 5;
+    static const int DATA_VERSION = 5;
+    static const size_t COLORPAIR_SIZE = 6;
 
     enum colors {
         RED,
@@ -61,8 +64,8 @@ namespace forest
         std::string insectNameSingular;
         std::string insectName;
         double insectQuantityModifier;
-        short uninhabitedColorPair[6];
-        short inhabitedColorPair[6];
+        short uninhabitedColorPair[COLORPAIR_SIZE];
+        short inhabitedColorPair[COLORPAIR_SIZE];
         std::vector<enum colors> colorDescriptions;
         std::vector<int> uninhabitedSymbols;
         std::vector<int> inhabitedSymbols;
@@ -137,7 +140,7 @@ namespace forest
         std::vector<double> weeklyRundifficulties;
 
         bool operator==(const saveFile& rhs) const {
-            assert (weeklyRundifficulties.size() == 7 && weeklyRuntimes.size() == 7);
+            assert (weeklyRundifficulties.size() == DAYS_PER_WEEK && weeklyRuntimes.size() == DAYS_PER_WEEK);
 
             return
             std::tie(dataVersion, biomeType, trees, productiveSeconds, biomeSeed, name, lastRunTime, dailyStreak, weeklyRuntimes[0], weeklyRuntimes[1], weeklyRuntimes[2], weeklyRuntimes[3], weeklyRuntimes[4], weeklyRuntimes[5], weeklyRuntimes[6], weeklyRundifficulties[0], weeklyRundifficulties[1], weeklyRundifficulties[2], weeklyRundifficulties[3], weeklyRundifficulties[4], weeklyRundifficulties[5], weeklyRundifficulties[6]) ==
